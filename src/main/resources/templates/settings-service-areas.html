@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Service areas')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('settings-areas')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Settings · Service Areas')}"></header>
+    <main class="content">
+      <div class="page-head"><div><h1>Service Areas</h1><p>Classify vendors and contracts. Each area can have its own approval flow (otherwise the Default flow is used). Inactive areas are hidden from new vendors and contracts but kept on existing records.</p></div>
+        <div class="actions"><button class="btn primary" type="button" id="a-new"><svg class="ic"><use href="#i-plus"/></svg>New service area</button></div></div>
+      <div class="card flush"><div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Description</th><th>Vendors</th><th>Contracts</th><th>Approval flow</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="a : ${areas}">
+            <td class="name" th:text="${a.name}">Name</td>
+            <td class="muted" th:text="${a.description}"></td>
+            <td th:text="${a.vendors}">0</td>
+            <td th:text="${a.contracts}">0</td>
+            <td><a th:href="@{/settings/flows(scope=${a.id})}" th:text="${a.flowSteps > 0} ? ${a.flowSteps} + ' step(s)' : 'Default flow'">Default</a></td>
+            <td><span class="badge" th:classappend="${a.active} ? 'b-ACTIVE' : 'b-CLOSED'" th:text="${a.active} ? 'Active' : 'Inactive'"></span></td>
+            <td style="white-space:nowrap">
+              <button class="btn sm" type="button" data-edit th:data-id="${a.id}" th:data-name="${a.name}" th:data-description="${a.description}" th:data-active="${a.active}">Edit</button>
+              <button class="btn sm danger" type="button" th:if="${a.vendors == 0 and a.contracts == 0 and a.flowSteps == 0}" th:data-del="${a.id}" th:data-name="${a.name}">Delete</button>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(areas)}"><td colspan="7" class="empty">No service areas yet.</td></tr>
+        </tbody></table></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="a-modal">
+  <h2 id="a-title">New service area</h2>
+  <div class="err" id="a-err"></div>
+  <div class="field"><label>Name <span class="req">*</span></label><input id="a-name" maxlength="100"></div>
+  <div class="field"><label>Description</label><textarea id="a-desc" maxlength="300"></textarea></div>
+  <div class="field" id="a-active-row"><label style="font-weight:400"><input type="checkbox" id="a-active" checked> Active</label>
+    <div class="hint">Inactive areas cannot be chosen for new vendors or contracts.</div></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('a-modal')">Cancel</button><button class="btn primary" type="button" id="a-save">Save</button></div>
+</div>
+
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/service-areas.js}"></script>
+</body>
+</html>

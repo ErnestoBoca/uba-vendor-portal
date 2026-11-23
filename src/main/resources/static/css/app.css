@@ -124,7 +124,7 @@ dl.kv { display: grid; grid-template-columns: 180px 1fr; gap: 10px 16px; margin:
 
 /* steps editor */
 .flow-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; } .scope-list a { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; color: var(--ink); } .scope-list a:hover { background: var(--grey-soft); text-decoration: none; } .scope-list a.on { background: var(--red-soft); color: var(--red-dark); font-weight: 600; }
-.step-row { display: grid; grid-template-columns: 34px 1fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; } .step-no { width: 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.step-row { display: grid; grid-template-columns: 34px 1.2fr 1fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 10px; } .step-no { width: 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
 .switch-row { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); } .switch-row:last-child { border-bottom: 0; }
 
 /* toast */

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Roles')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('settings-roles')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Settings · Roles')}"></header>
+    <main class="content">
+      <div class="page-head"><div><h1>Roles</h1><p>Each department has an <b>Approver</b> role. Departments with officers (Corporate Services, Legal) also have an <b>Officer</b> role that prepares the work. Assign roles to people in <a th:href="@{/settings/users}">Users</a> and use approver roles in <a th:href="@{/settings/flows}">Approval Flows</a>.</p></div>
+        <div class="actions"><button class="btn primary" type="button" id="d-new"><svg class="ic"><use href="#i-plus"/></svg>New department</button></div></div>
+
+      <div class="card flush"><div class="table-wrap"><table>
+        <thead><tr><th>Department</th><th>Code</th><th>Roles</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="d : ${departments}">
+            <td class="name"><span th:text="${d.name}">Name</span> <span class="badge b-DRAFT" th:if="${d.system}" title="System department: cannot be deactivated">System</span></td>
+            <td class="mono" th:text="${d.code}">CS</td>
+            <td>
+              <div th:each="r : ${d.roles}" th:if="${r.active}" style="margin:2px 0">
+                <span class="badge" th:classappend="${r.level == 'APPROVER'} ? 'b-APPROVED' : 'b-IN_APPROVAL'" th:text="${r.level == 'APPROVER'} ? 'Approver' : 'Officer'"></span>
+                <span th:text="${r.name}"></span> <span class="muted" th:text="'· ' + ${r.users} + ' active user(s)'"></span>
+              </div>
+            </td>
+            <td><span class="badge" th:classappend="${d.active} ? 'b-ACTIVE' : 'b-CLOSED'" th:text="${d.active} ? 'Active' : 'Inactive'"></span></td>
+            <td><button class="btn sm" type="button" data-edit th:data-id="${d.id}" th:data-code="${d.code}" th:data-name="${d.name}"
+                        th:data-officers="${d.hasOfficers}" th:data-active="${d.active}" th:data-system="${d.system}">Edit</button></td>
+          </tr>
+        </tbody></table></div></div>
+
+      <div class="card">
+        <h2>System roles</h2>
+        <p class="muted">Not tied to a department.</p>
+        <div th:each="r : ${systemRoles}" style="margin:4px 0">
+          <span class="badge b-DRAFT" th:text="${r.level == 'ADMIN'} ? 'Admin' : 'Read-only'"></span>
+          <b th:text="${r.name}"></b> <span class="mono muted" th:text="${r.code}"></span>
+          <span class="muted" th:text="'· ' + ${r.users} + ' active user(s)'"></span>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="d-modal">
+  <h2 id="d-title">New department</h2>
+  <div class="err" id="d-err"></div>
+  <div class="grid2">
+    <div class="field"><label>Code <span class="req">*</span></label><input id="d-code" maxlength="20" placeholder="e.g. PROCUREMENT"><div class="hint">Used in role codes (CODE_APPROVER). Cannot be changed later.</div></div>
+    <div class="field"><label>Name <span class="req">*</span></label><input id="d-name" maxlength="100"></div>
+  </div>
+  <div class="field"><label style="font-weight:400"><input type="checkbox" id="d-officers"> Has officers (Officer + Approver roles)</label>
+    <div class="hint">Leave unticked for departments that only approve.</div></div>
+  <div class="field" id="d-active-row"><label style="font-weight:400"><input type="checkbox" id="d-active" checked> Active</label>
+    <div class="hint">A department can only be deactivated when no active user, flow step or open task uses its roles.</div></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('d-modal')">Cancel</button><button class="btn primary" type="button" id="d-save">Save</button></div>
+</div>
+
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/roles.js}"></script>
+</body>
+</html>

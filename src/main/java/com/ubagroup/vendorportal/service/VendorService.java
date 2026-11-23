@@ -45,9 +45,14 @@ public class VendorService {
     private final CurrentUser currentUser;
     private final AuditService audit;
     private final DocumentService documents;
+    private final ServiceAreaService serviceAreas;
+    private final SettingsService settings;
 
     public VendorService(VendorRepository vendors, VendorContactRepository contactRepo, ServiceCategoryRepository categories,
-                         AppUserRepository users, Jpa jpa, CurrentUser currentUser, AuditService audit, DocumentService documents) {
+                         AppUserRepository users, Jpa jpa, CurrentUser currentUser, AuditService audit, DocumentService documents,
+                         ServiceAreaService serviceAreas, SettingsService settings) {
+        this.serviceAreas = serviceAreas;
+        this.settings = settings;
         this.vendors = vendors;
         this.contactRepo = contactRepo;
         this.categories = categories;
@@ -62,6 +67,15 @@ public class VendorService {
 
     public List<Map<String, Object>> categories() {
         return jpa.list("select new map(c.id as id, c.name as name) from ServiceCategory c where c.active = true order by c.name");
+    }
+
+    /** Areas activas + a area actual do registo (se entretanto foi desactivada), para os formularios de edicao. */
+    public List<Map<String, Object>> categoriesIncluding(Integer currentId) {
+        List<Map<String, Object>> list = new java.util.ArrayList<>(categories());
+        if (currentId != null && list.stream().noneMatch(c -> currentId.equals(c.get("id")))) {
+            categories.findById(currentId).ifPresent(c -> list.add(p("id", c.getId(), "name", c.getName() + " (inactive)")));
+        }
+        return list;
     }
 
     public Map<String, Object> list(String q, String status, Integer categoryId, int page, int size) {
@@ -151,13 +165,14 @@ public class VendorService {
         v.setPhone(nullIfBlank(f.phone()));
         v.setAddress(f.address().trim());
         v.setNuit(f.nuit().trim());
-        v.setServiceCategory(categories.findById(f.serviceCategoryId()).orElseThrow(() -> new ApiException("Area de servico invalida.")));
+        v.setServiceCategory(serviceAreas.requireUsable(f.serviceCategoryId(), v.getServiceCategory() == null ? null : v.getServiceCategory().getId()));
         v.setServiceDescription(nullIfBlank(f.serviceDescription()));
         v.setCompanyRegNumber(nullIfBlank(f.companyRegNumber()));
     }
 
     @Transactional
     public long create(VendorForm f, List<MultipartFile> files) {
+        currentUser.requireVendorEdit();
         validateMain(f, null);
         List<ContactForm> contacts = f.contacts() == null ? List.of() : f.contacts();
         if (contacts.isEmpty()) {
@@ -194,6 +209,7 @@ public class VendorService {
 
     @Transactional
     public void update(long id, VendorForm f) {
+        currentUser.requireVendorEdit();
         Vendor v = vendors.findById(id).orElseThrow(() -> new ApiException("Vendor nao encontrado.", 404));
         if (!v.getStatus().equals("PENDING")) {
             throw new ApiException("So e possivel editar vendors com estado Pending.");
@@ -207,7 +223,12 @@ public class VendorService {
 
     @Transactional
     public void review(long id, String action, String comment) {
+        currentUser.requireVendorReview();
         Vendor v = vendors.findById(id).orElseThrow(() -> new ApiException("Vendor nao encontrado.", 404));
+        if (!"START".equals(action) && settings.bool("enforce_segregation_of_duties")
+                && v.getCreatedBy() != null && v.getCreatedBy().getId() == currentUser.id()) {
+            throw new ApiException("Segregacao de funcoes activa: quem registou o vendor nao o pode aprovar nem rejeitar.", 403);
+        }
         String st = v.getStatus();
         String next;
         switch (String.valueOf(action)) {
@@ -235,6 +256,7 @@ public class VendorService {
 
     @Transactional
     public long addContact(long vendorId, ContactForm c) {
+        currentUser.requireVendorEdit();
         Vendor v = vendors.findById(vendorId).orElseThrow(() -> new ApiException("Vendor nao encontrado.", 404));
         if (blank(c.fullName()) || blank(c.phone()) || blank(c.jobTitle())) {
             throw new ApiException("O contacto precisa de nome, telefone e funcao.");
@@ -247,6 +269,7 @@ public class VendorService {
 
     @Transactional
     public void removeContact(long vendorId, long contactId) {
+        currentUser.requireVendorEdit();
         VendorContact c = contactRepo.findByIdAndVendorIdAndActiveTrue(contactId, vendorId)
             .orElseThrow(() -> new ApiException("Contacto nao encontrado.", 404));
         if (c.isPrimaryContact()) throw new ApiException("O contacto principal nao pode ser removido.");

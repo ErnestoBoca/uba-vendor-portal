@@ -10,7 +10,7 @@
     <main class="content">
       <div class="page-head">
         <div><h1>Vendor Onboarding</h1><p>Registered suppliers and their onboarding status.</p></div>
-        <div class="actions"><button class="btn primary" id="btn-new" type="button"><svg class="ic"><use href="#i-plus"/></svg>Register new vendor</button></div>
+        <div class="actions" th:if="${can.vendorEdit}"><button class="btn primary" id="btn-new" type="button"><svg class="ic"><use href="#i-plus"/></svg>Register new vendor</button></div>
       </div>
 
       <div class="card flush">
@@ -44,7 +44,7 @@
                 <td th:text="${#temporals.format(v.createdAt, 'dd/MM/yyyy')}">01/01/2026</td>
                 <td style="white-space:nowrap">
                   <a th:href="@{/vendors/{id}(id=${v.id})}">View</a>
-                  <a th:if="${v.status == 'PENDING'}" th:href="@{/vendors/{id}(id=${v.id},edit=1)}" style="margin-left:10px;color:inherit">Edit</a>
+                  <a th:if="${v.status == 'PENDING' and can.vendorEdit}" th:href="@{/vendors/{id}(id=${v.id},edit=1)}" style="margin-left:10px;color:inherit">Edit</a>
                 </td>
               </tr>
               <tr th:if="${result.total == 0}"><td colspan="10" class="empty">No vendors found.</td></tr>

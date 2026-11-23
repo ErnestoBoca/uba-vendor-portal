@@ -8,7 +8,7 @@
   <div class="main">
     <header th:replace="~{fragments/shell :: topbar('Approvals')}"></header>
     <main class="content">
-      <div class="page-head"><div><h1>Approvals</h1><p>Requests waiting for a decision. Each step is assigned to one person; use Reassign if they are unavailable.</p></div></div>
+      <div class="page-head"><div><h1>Approvals</h1><p>Requests waiting for a decision. A step goes to an approver role (anyone with it can decide) or to one person; use Reassign to hand it to someone specific.</p></div></div>
       <div class="tabs">
         <a th:href="@{/approvals(tab='mine')}" th:classappend="${tab == 'mine'} ? 'on'">My pending <span class="pill" style="display:inline-grid;margin-left:6px" th:if="${myPending > 0}" th:text="${myPending}">2</span></a>
         <a th:href="@{/approvals(tab='all')}" th:classappend="${tab == 'all'} ? 'on'">All pending</a>
@@ -23,16 +23,17 @@
               <td><a th:href="@{/contracts/{id}(id=${t.entityId})}" th:text="${t.contractNumber}" class="mono">CTR</a><div class="name" th:text="${t.title}"></div></td>
               <td th:text="${t.vendorName}"></td>
               <td th:text="${t.stepNo} + '. ' + ${t.stepName}"></td>
-              <td th:text="${t.approverName}"></td>
+              <td><span th:text="${t.approverName}"></span><div class="muted" th:if="${tab == 'decided' and t.decidedBy != null and t.decidedBy != t.approverName}" th:text="'decided by ' + ${t.decidedBy}"></div></td>
               <td th:text="${t.submittedBy}"></td>
               <td th:text="${tab == 'decided'} ? ${#temporals.format(t.decidedAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(t.submittedAt, 'dd/MM/yyyy HH:mm')}"></td>
               <td><span th:replace="~{fragments/shell :: status(${t.decision})}"></span></td>
               <td th:if="${tab == 'decided'}" th:text="${t.comments}" class="muted"></td>
-              <td th:unless="${tab == 'decided'}" style="white-space:nowrap">
+              <td th:unless="${tab == 'decided'}" style="white-space:nowrap"><th:block th:if="${t.canAct}">
                 <button class="btn sm green" type="button" data-decide="APPROVE" th:data-task="${t.taskId}">Approve</button>
                 <button class="btn sm" type="button" data-decide="RETURN" th:data-task="${t.taskId}">Return</button>
                 <button class="btn sm danger" type="button" data-decide="REJECT" th:data-task="${t.taskId}">Reject</button>
-                <button class="btn sm" type="button" data-reassign th:data-task="${t.taskId}" th:data-current="${t.approverId}">Reassign</button>
+                <button class="btn sm" type="button" data-reassign th:data-task="${t.taskId}" th:data-current="${t.approverId}">Reassign</button></th:block>
+                <span class="muted" th:unless="${t.canAct}">—</span>
               </td>
             </tr>
             <tr th:if="${#lists.isEmpty(tasks)}"><td colspan="8" class="empty">Nothing here.</td></tr>

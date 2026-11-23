@@ -36,7 +36,8 @@ public class FlowController {
         model.addAttribute("scope", scope);
         model.addAttribute("scopeName", flows.scopeName(scope));
         model.addAttribute("steps", flows.steps(scope));
-        model.addAttribute("users", approvals.activeUsers());
+        model.addAttribute("roles", flows.approverRoles());
+        model.addAttribute("users", flows.approverUsers());
         return "settings-flows";
     }
 

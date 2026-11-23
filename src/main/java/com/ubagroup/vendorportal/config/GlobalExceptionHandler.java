@@ -50,6 +50,7 @@ public class GlobalExceptionHandler {
         mv.addObject("active", "");
         mv.addObject("me", currentUser.info());
         mv.addObject("myPending", approvals.countMine());
+        mv.addObject("can", currentUser.permissions());
         mv.setStatus(HttpStatus.valueOf(status));
         mv.addObject("message", message);
         return mv;

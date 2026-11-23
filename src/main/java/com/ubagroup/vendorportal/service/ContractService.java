@@ -48,9 +48,12 @@ public class ContractService {
     private final CurrentUser currentUser;
     private final AuditService audit;
     private final SettingsService settings;
+    private final ServiceAreaService serviceAreas;
 
     public ContractService(ContractRepository contracts, VendorRepository vendors, ServiceCategoryRepository categories,
-                           AppUserRepository users, Jpa jpa, CurrentUser currentUser, AuditService audit, SettingsService settings) {
+                           AppUserRepository users, Jpa jpa, CurrentUser currentUser, AuditService audit, SettingsService settings,
+                           ServiceAreaService serviceAreas) {
+        this.serviceAreas = serviceAreas;
         this.contracts = contracts;
         this.vendors = vendors;
         this.categories = categories;
@@ -139,7 +142,7 @@ public class ContractService {
 
     private void fill(Contract c, ContractForm f, Vendor vendor) {
         c.setVendor(vendor);
-        c.setServiceCategory(categories.findById(f.serviceCategoryId()).orElseThrow(() -> new ApiException("Tipo de servico invalido.")));
+        c.setServiceCategory(serviceAreas.requireUsable(f.serviceCategoryId(), c.getServiceCategory() == null ? null : c.getServiceCategory().getId()));
         c.setTitle(f.title().trim());
         c.setContractType(f.contractType());
         c.setObjectDescription(nullIfBlank(f.objectDescription()));
@@ -164,6 +167,7 @@ public class ContractService {
 
     @Transactional
     public long create(ContractForm f) {
+        currentUser.requireContractEdit();
         Vendor vendor = validate(f);
         Contract c = new Contract();
         fill(c, f, vendor);
@@ -180,6 +184,7 @@ public class ContractService {
 
     @Transactional
     public void update(long id, ContractForm f) {
+        currentUser.requireContractEdit();
         Contract c = contracts.findById(id).orElseThrow(() -> new ApiException("Contrato nao encontrado.", 404));
         if (!c.getStatus().equals("DRAFT") && !c.getStatus().equals("REJECTED")) {
             throw new ApiException("So e possivel editar contratos em Draft ou Rejected.");

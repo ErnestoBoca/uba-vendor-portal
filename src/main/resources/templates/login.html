@@ -22,6 +22,7 @@
       <p class="muted" style="margin-bottom:24px">Use your portal credentials.</p>
       <div class="err show" th:if="${param.error}">Invalid username or password.</div>
       <div class="hint" style="margin-bottom:12px;color:#0f7b4f" th:if="${param.logout}">You have been signed out.</div>
+      <div class="err show" th:if="${param.disabled}">Your user has been deactivated. Contact the system administrator.</div>
       <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" autofocus required></div>
       <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
       <button class="btn primary" style="width:100%;justify-content:center" type="submit">Sign in</button>

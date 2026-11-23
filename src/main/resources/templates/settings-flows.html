@@ -8,7 +8,7 @@
   <div class="main">
     <header th:replace="~{fragments/shell :: topbar('Settings · Approval Flows')}"></header>
     <main class="content" id="page" th:attr="data-scope=${scope}">
-      <div class="page-head"><div><h1>Approval Flows</h1><p>Define who approves contracts for each service type. Steps run in order; each step has exactly one approver.</p></div></div>
+      <div class="page-head"><div><h1>Approval Flows</h1><p>Define who approves contracts for each service area. Steps run in order. Each step goes to an approver <b>role</b> (any active person with that role can decide) or, optionally, to one specific person with that role. Manage areas in <a th:href="@{/settings/service-areas}">Service Areas</a>.</p></div></div>
       <div class="flow-layout">
         <div class="card scope-list" style="padding:10px;align-self:start">
           <a th:each="s : ${scopes}" th:href="@{/settings/flows(scope=${s.id})}" th:classappend="${s.id == scope} ? 'on'">
@@ -24,8 +24,9 @@
             <div class="step-row" th:each="st : ${steps}">
               <div class="step-no">1</div>
               <input data-s="name" th:value="${st.name}" placeholder="Step name (e.g. Legal Review)">
-              <select data-s="user"><option value="">Approver…</option>
-                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.username} + ')'" th:selected="${u.id == st.approverId}">User</option></select>
+              <select data-s="role"><option value="">Approver role…</option>
+                <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}" th:selected="${r.id == st.roleId}">Role</option></select>
+              <select data-s="user" th:attr="data-selected=${st.approverId}"><option value="">Anyone with the role</option></select>
               <div style="white-space:nowrap"><button class="btn sm" type="button" data-up>↑</button> <button class="btn sm" type="button" data-down>↓</button> <button class="btn sm danger" type="button" data-rm>✕</button></div>
             </div>
           </div>
@@ -33,8 +34,9 @@
             <div class="step-row">
               <div class="step-no">1</div>
               <input data-s="name" placeholder="Step name (e.g. Legal Review)">
-              <select data-s="user"><option value="">Approver…</option>
-                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.username} + ')'">User</option></select>
+              <select data-s="role"><option value="">Approver role…</option>
+                <option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}">Role</option></select>
+              <select data-s="user"><option value="">Anyone with the role</option></select>
               <div style="white-space:nowrap"><button class="btn sm" type="button" data-up>↑</button> <button class="btn sm" type="button" data-down>↓</button> <button class="btn sm danger" type="button" data-rm>✕</button></div>
             </div>
           </template>
@@ -50,6 +52,7 @@
     </main>
   </div>
 </div>
+<script th:inline="javascript">window.FLOW_USERS = /*[[${users}]]*/ [];</script>
 <th:block th:replace="~{fragments/shell :: scripts}"></th:block>
 <script th:src="@{/js/flows.js}"></script>
 </body>

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ubagroup.vendorportal.common.ApiException;
+import com.ubagroup.vendorportal.common.CurrentUser;
 import com.ubagroup.vendorportal.common.Util;
 import com.ubagroup.vendorportal.service.ContractService;
 import com.ubagroup.vendorportal.service.DocumentService;
@@ -30,10 +31,18 @@ public class DocumentController {
 
     private final DocumentService documents;
     private final ContractService contracts;
+    private final CurrentUser currentUser;
 
-    public DocumentController(DocumentService documents, ContractService contracts) {
+    public DocumentController(DocumentService documents, ContractService contracts, CurrentUser currentUser) {
         this.documents = documents;
         this.contracts = contracts;
+        this.currentUser = currentUser;
+    }
+
+    /** Documentos de vendor: quem edita vendors; de contrato: quem edita contratos. */
+    private void requireEdit(String entityType) {
+        if ("VENDOR".equals(entityType)) currentUser.requireVendorEdit();
+        else currentUser.requireContractEdit();
     }
 
     @PostMapping(value = "/api/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -48,6 +57,7 @@ public class DocumentController {
         if (!ALLOWED.contains(entityType)) {
             throw new ApiException("Tipo de entidade nao suportado.");
         }
+        requireEdit(entityType);
         Long vendorId = entityType.equals("VENDOR") ? Long.valueOf(entityId) : Util.num(contracts.get(entityId).get("vendorId"));
         long id = documents.save(entityType, entityId, documentTypeId, name, file, parse(issueDate), parse(expiryDate), vendorId);
         return Map.of("id", id);
@@ -56,6 +66,9 @@ public class DocumentController {
     @DeleteMapping("/api/documents/{id}")
     @ResponseBody
     public Map<String, Object> remove(@PathVariable long id) {
+        Map<String, Object> d = documents.find(id);
+        if (d == null) throw new ApiException("Documento nao encontrado.", 404);
+        requireEdit((String) d.get("entityType"));
         documents.deactivate(id);
         return Map.of("ok", true);
     }

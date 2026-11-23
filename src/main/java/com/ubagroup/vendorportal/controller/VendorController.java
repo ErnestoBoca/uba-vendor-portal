@@ -61,13 +61,14 @@ public class VendorController {
     @GetMapping("/vendors/{id}")
     public String detail(@PathVariable long id, Model model) {
         model.addAttribute("active", "vendors");
-        model.addAttribute("v", vendors.get(id));
+        Map<String, Object> v = vendors.get(id);
+        model.addAttribute("v", v);
         model.addAttribute("contacts", vendors.contacts(id));
         model.addAttribute("docs", documents.list("VENDOR", id));
         model.addAttribute("docTypes", documents.types("VENDOR"));
         model.addAttribute("history", vendors.history(id));
         model.addAttribute("contracts", contracts.forVendor(id));
-        model.addAttribute("categories", vendors.categories());
+        model.addAttribute("categories", vendors.categoriesIncluding((Integer) v.get("serviceCategoryId")));
         return "vendor-detail";
     }
 

@@ -42,10 +42,14 @@
     <a th:href="@{/approvals}" th:classappend="${active == 'approvals'} ? 'active'"><svg class="ic"><use href="#i-check-list"/></svg>Approvals
       <span class="pill" th:if="${myPending > 0}" th:text="${myPending}">2</span></a>
 
+    <th:block th:if="${can != null and can.settings}">
     <div class="group">SETTINGS</div>
     <a th:href="@{/settings/general}" th:classappend="${active == 'settings-general'} ? 'active'"><svg class="ic"><use href="#i-sliders"/></svg>General</a>
+    <a th:href="@{/settings/service-areas}" th:classappend="${active == 'settings-areas'} ? 'active'"><svg class="ic"><use href="#i-folder"/></svg>Service Areas</a>
     <a th:href="@{/settings/flows}" th:classappend="${active == 'settings-flows'} ? 'active'"><svg class="ic"><use href="#i-cog"/></svg>Approval Flows</a>
+    <a th:href="@{/settings/roles}" th:classappend="${active == 'settings-roles'} ? 'active'"><svg class="ic"><use href="#i-shield"/></svg>Roles</a>
     <a th:href="@{/settings/users}" th:classappend="${active == 'settings-users'} ? 'active'"><svg class="ic"><use href="#i-users"/></svg>Users</a>
+    </th:block>
 
     <div class="group">COMING SOON</div>
     <span class="soon" title="Em breve"><svg class="ic"><use href="#i-folder"/></svg>Document Collection</span>
@@ -64,7 +68,7 @@
     <a class="bell" th:href="@{/approvals}" title="Approvals"><svg class="ic"><use href="#i-bell"/></svg><span class="dot" th:if="${myPending > 0}"></span></a>
     <div class="userbox">
       <div class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.fullName, 0, 1))}">A</div>
-      <span th:text="${me.fullName}">Administrator</span>
+      <span th:text="${me.fullName}" th:title="${me.roles}">Administrator</span>
       <form th:action="@{/logout}" method="post"><button class="linkbtn" type="submit" title="Sign out">Sign out</button></form>
     </div>
   </div>

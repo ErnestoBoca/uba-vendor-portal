@@ -44,17 +44,36 @@ public class UserService {
 
     public List<Map<String, Object>> list() {
         return jpa.list("select new map(u.id as id, u.username as username, u.fullName as fullName, u.email as email, u.active as active, "
-            + "r.id as roleId, r.name as roleName) from AppUser u left join u.roles r order by u.fullName");
+            + "r.id as roleId, r.name as roleName, r.level as roleLevel, d.name as departmentName) "
+            + "from AppUser u left join u.roles r left join r.department d order by u.fullName");
     }
 
+    /** Perfis activos para o select (agrupados por departamento no template). */
     public List<Map<String, Object>> roles() {
-        return jpa.list("select new map(r.id as id, r.code as code, r.name as name) from AppRole r order by r.name");
+        return jpa.list("select new map(r.id as id, r.code as code, r.name as name, r.level as level, "
+            + "coalesce(d.name, 'System') as departmentName) from AppRole r left join r.department d "
+            + "where r.active = true and (d is null or d.active = true) order by d.name nulls first, r.level desc, r.name");
     }
 
     private Set<AppRole> roleSet(Integer roleId) {
+        AppRole r = roles.findById(roleId).orElseThrow(() -> new ApiException("Perfil invalido."));
+        if (!r.isActive() || (r.getDepartment() != null && !r.getDepartment().isActive())) {
+            throw new ApiException("O perfil '" + r.getName() + "' esta inactivo.");
+        }
         Set<AppRole> s = new HashSet<>();
-        s.add(roles.findById(roleId).orElseThrow(() -> new ApiException("Perfil invalido.")));
+        s.add(r);
         return s;
+    }
+
+    private static boolean isAdmin(AppUser u) {
+        return u.getRoles().stream().anyMatch(r -> r.isActive() && AppRole.ADMIN.equals(r.getLevel()));
+    }
+
+    /** Impede ficar sem nenhum administrador activo. */
+    private void ensureAnotherAdmin(AppUser u) {
+        long admins = jpa.count("select count(distinct u) from AppUser u join u.roles r where u.active = true and r.active = true "
+            + "and r.level = 'ADMIN' and u.id <> :id", p("id", u.getId()));
+        if (admins == 0) throw new ApiException("Tem de existir pelo menos um administrador do sistema activo.");
     }
 
     @Transactional
@@ -96,10 +115,14 @@ public class UserService {
         }
         if (f.active() != null) {
             if (!f.active() && id == currentUser.id()) throw new ApiException("Nao pode desactivar o proprio utilizador.");
+            if (!f.active() && u.isActive() && isAdmin(u)) ensureAnotherAdmin(u);
             u.setActive(f.active());
         }
         if (f.roleId() != null) {
-            u.setRoles(roleSet(f.roleId()));
+            Set<AppRole> next = roleSet(f.roleId());
+            boolean staysAdmin = next.stream().anyMatch(r -> AppRole.ADMIN.equals(r.getLevel()));
+            if (isAdmin(u) && !staysAdmin) ensureAnotherAdmin(u);
+            u.setRoles(next);
         }
         audit.log("USER", id, null, "UPDATE", null, p("username", u.getUsername(), "active", f.active(), "roleId", f.roleId(),
             "passwordChanged", f.password() != null && !f.password().isEmpty()));

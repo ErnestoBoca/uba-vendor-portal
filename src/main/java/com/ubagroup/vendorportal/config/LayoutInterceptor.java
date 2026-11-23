@@ -36,5 +36,6 @@ public class LayoutInterceptor implements HandlerInterceptor {
         }
         mv.addObject("me", currentUser.info());
         mv.addObject("myPending", approvals.countMine());
+        mv.addObject("can", currentUser.permissions());
     }
 }

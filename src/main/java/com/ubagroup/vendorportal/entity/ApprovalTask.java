@@ -14,7 +14,10 @@ public class ApprovalTask {
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "request_id") private ApprovalRequest request;
     @Column(name = "step_no") private Integer stepNo;
     @Column(name = "step_name") private String stepName;
-    @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "approver_user_id") private AppUser approver;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "approver_role_id") private AppRole approverRole;
+    /** Pessoa atribuida; null = qualquer utilizador com approverRole. */
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "approver_user_id") private AppUser approver;
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "decided_by") private AppUser decidedBy;
     @Column(name = "decision") private String decision = "WAITING";
     @Column(name = "decided_at") private OffsetDateTime decidedAt;
     @Column(name = "comments") private String comments;

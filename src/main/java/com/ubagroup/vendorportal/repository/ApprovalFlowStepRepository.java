@@ -10,7 +10,7 @@ import com.ubagroup.vendorportal.entity.ApprovalFlowStep;
 public interface ApprovalFlowStepRepository extends JpaRepository<ApprovalFlowStep, Integer> {
 
     /** Passos activos do fluxo (entityType + scope), por ordem. */
-    @Query("select s from ApprovalFlowStep s join fetch s.approver where s.flow.entityType = :et and s.flow.scopeId = :scope "
+    @Query("select s from ApprovalFlowStep s join fetch s.approverRole left join fetch s.approver where s.flow.entityType = :et and s.flow.scopeId = :scope "
          + "and s.flow.active = true and s.active = true order by s.stepNo")
     List<ApprovalFlowStep> activeSteps(@Param("et") String entityType, @Param("scope") Long scope);
 

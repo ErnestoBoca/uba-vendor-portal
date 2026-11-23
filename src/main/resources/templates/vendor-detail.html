@@ -15,11 +15,11 @@
           <p><span class="mono" th:text="${v.code}">UBA-VND-000001</span> &nbsp; <span th:replace="~{fragments/shell :: status(${v.status})}"></span></p>
         </div>
         <div class="actions">
-          <button class="btn" id="btn-edit" type="button" th:if="${v.status == 'PENDING'}">Edit</button>
-          <button class="btn" data-review="START" type="button" th:if="${v.status == 'PENDING'}">Start review</button>
-          <button class="btn danger" data-review="REJECT" type="button" th:if="${v.status == 'PENDING' or v.status == 'UNDER_REVIEW'}">Reject</button>
-          <button class="btn green" data-review="APPROVE" type="button" th:if="${v.status == 'PENDING' or v.status == 'UNDER_REVIEW'}">Approve</button>
-          <a class="btn primary" th:if="${v.status == 'APPROVED'}" th:href="@{/contracts/new(vendorId=${v.id})}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
+          <button class="btn" id="btn-edit" type="button" th:if="${v.status == 'PENDING' and can.vendorEdit}">Edit</button>
+          <button class="btn" data-review="START" type="button" th:if="${v.status == 'PENDING' and can.vendorReview}">Start review</button>
+          <button class="btn danger" data-review="REJECT" type="button" th:if="${(v.status == 'PENDING' or v.status == 'UNDER_REVIEW') and can.vendorReview}">Reject</button>
+          <button class="btn green" data-review="APPROVE" type="button" th:if="${(v.status == 'PENDING' or v.status == 'UNDER_REVIEW') and can.vendorReview}">Approve</button>
+          <a class="btn primary" th:if="${v.status == 'APPROVED' and can.contractEdit}" th:href="@{/contracts/new(vendorId=${v.id})}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
         </div>
       </div>
 
@@ -43,21 +43,21 @@
           </div>
 
           <div class="card flush">
-            <div class="toolbar"><h2 style="margin:0;flex:1">Company contacts</h2><button class="btn sm" id="btn-contact" type="button"><svg class="ic"><use href="#i-plus"/></svg>Add contact</button></div>
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company contacts</h2><button class="btn sm" id="btn-contact" type="button" th:if="${can.vendorEdit}"><svg class="ic"><use href="#i-plus"/></svg>Add contact</button></div>
             <div class="table-wrap"><table>
               <thead><tr><th>Name</th><th>Function</th><th>Phone</th><th>Email</th><th></th></tr></thead>
               <tbody>
                 <tr th:each="c : ${contacts}">
                   <td class="name"><span th:text="${c.fullName}">Name</span> <span class="badge b-ACTIVE" th:if="${c.isPrimary}">Primary</span></td>
                   <td th:text="${c.jobTitle}"></td><td th:text="${c.phone}"></td><td th:text="${c.email} ?: '—'"></td>
-                  <td><button class="btn sm danger" type="button" th:unless="${c.isPrimary}" th:data-contact-del="${c.id}">Remove</button></td>
+                  <td><button class="btn sm danger" type="button" th:if="${!c.isPrimary and can.vendorEdit}" th:data-contact-del="${c.id}">Remove</button></td>
                 </tr>
               </tbody></table></div>
           </div>
 
           <div class="card flush">
-            <div class="toolbar"><h2 style="margin:0;flex:1">Company documents</h2><button class="btn sm" id="doc-open" type="button"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
-            <div th:replace="~{fragments/documents :: panel(${docs}, true)}"></div>
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company documents</h2><button class="btn sm" id="doc-open" type="button" th:if="${can.vendorEdit}"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
+            <div th:replace="~{fragments/documents :: panel(${docs}, ${can.vendorEdit})}"></div>
           </div>
         </div>
 

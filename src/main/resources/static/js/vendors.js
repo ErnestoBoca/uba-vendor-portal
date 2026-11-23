@@ -46,8 +46,11 @@
   }
   ['f-contact', 'f-mobile', 'f-mobile-cc'].forEach(id => document.getElementById(id).addEventListener('input', syncPrimary));
 
-  document.getElementById('btn-new').addEventListener('click', open);
-  if (new URLSearchParams(location.search).get('new')) open();
+  const btnNew = document.getElementById('btn-new');
+  if (btnNew) {
+    btnNew.addEventListener('click', open);
+    if (new URLSearchParams(location.search).get('new')) open();
+  }
   document.getElementById('overlay').addEventListener('click', () => UI.close('drawer'));
 
   document.getElementById('add-contact').addEventListener('click', () => contactsBox.insertAdjacentHTML('beforeend', contactHtml(false)));

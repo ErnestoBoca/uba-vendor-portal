@@ -20,7 +20,8 @@
   }));
 
   // contactos
-  document.getElementById('btn-contact').addEventListener('click', () => { UI.clearError('contact-err'); UI.open('contact-modal'); });
+  const btnContact = document.getElementById('btn-contact');
+  if (btnContact) btnContact.addEventListener('click', () => { UI.clearError('contact-err'); UI.open('contact-modal'); });
   document.getElementById('ct-save').addEventListener('click', ev => UI.run(ev.currentTarget, 'contact-err', async () => {
     await Api.post('/api/vendors/' + id + '/contacts', { fullName: UI.val('ct-name'), phone: UI.val('ct-phone'), jobTitle: UI.val('ct-job'), email: UI.orNull(UI.val('ct-email')) });
     location.reload();

@@ -9,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ubagroup.vendorportal.common.ApiException;
 import com.ubagroup.vendorportal.common.Jpa;
+import com.ubagroup.vendorportal.entity.AppRole;
 import com.ubagroup.vendorportal.entity.AppUser;
 import com.ubagroup.vendorportal.entity.ApprovalFlow;
 import com.ubagroup.vendorportal.entity.ApprovalFlowStep;
+import com.ubagroup.vendorportal.repository.AppRoleRepository;
 import com.ubagroup.vendorportal.repository.AppUserRepository;
 import com.ubagroup.vendorportal.repository.ApprovalFlowRepository;
 import com.ubagroup.vendorportal.repository.ApprovalFlowStepRepository;
@@ -24,21 +26,24 @@ import static com.ubagroup.vendorportal.common.Util.p;
 @Transactional(readOnly = true)
 public class FlowService {
 
-    public record StepForm(String name, Long approverUserId) { }
+    /** approverRoleId: perfil que aprova (obrigatorio). approverUserId: pessoa concreta com esse perfil (opcional). */
+    public record StepForm(String name, Integer approverRoleId, Long approverUserId) { }
 
     private final ApprovalFlowRepository flows;
     private final ApprovalFlowStepRepository stepRepo;
     private final ServiceCategoryRepository categories;
     private final AppUserRepository users;
+    private final AppRoleRepository roles;
     private final Jpa jpa;
     private final AuditService audit;
 
     public FlowService(ApprovalFlowRepository flows, ApprovalFlowStepRepository stepRepo, ServiceCategoryRepository categories,
-                       AppUserRepository users, Jpa jpa, AuditService audit) {
+                       AppUserRepository users, AppRoleRepository roles, Jpa jpa, AuditService audit) {
         this.flows = flows;
         this.stepRepo = stepRepo;
         this.categories = categories;
         this.users = users;
+        this.roles = roles;
         this.jpa = jpa;
         this.audit = audit;
     }
@@ -59,9 +64,24 @@ public class FlowService {
     }
 
     public List<Map<String, Object>> steps(long scope) {
-        return jpa.list("select new map(s.stepNo as stepNo, s.name as name, a.id as approverId, a.fullName as approverName) "
-            + "from ApprovalFlowStep s join s.flow f join s.approver a "
+        return jpa.list("select new map(s.stepNo as stepNo, s.name as name, r.id as roleId, r.name as roleName, "
+            + "a.id as approverId, a.fullName as approverName) "
+            + "from ApprovalFlowStep s join s.flow f join s.approverRole r left join s.approver a "
             + "where f.entityType = 'CONTRACT' and f.scopeId = :sc and s.active = true order by s.stepNo", p("sc", scope));
+    }
+
+    /** Perfis que podem aprovar passos: Approvers dos departamentos activos (e o administrador). */
+    public List<Map<String, Object>> approverRoles() {
+        return jpa.list("select new map(r.id as id, r.name as name, r.level as level) from AppRole r left join r.department d "
+            + "where r.active = true and r.level in ('APPROVER', 'ADMIN') and (d is null or d.active = true) "
+            + "order by r.level desc, r.name");
+    }
+
+    /** Utilizadores activos com os respectivos perfis (o select de pessoa e filtrado pelo perfil escolhido). */
+    public List<Map<String, Object>> approverUsers() {
+        return jpa.list("select new map(u.id as id, u.fullName as fullName, u.username as username, r.id as roleId) "
+            + "from AppUser u join u.roles r where u.active = true and r.active = true and r.level in ('APPROVER', 'ADMIN') "
+            + "order by u.fullName");
     }
 
     public String scopeName(long scope) {
@@ -75,12 +95,26 @@ public class FlowService {
         if (steps == null || steps.isEmpty()) {
             throw new ApiException("O fluxo precisa de pelo menos um passo.");
         }
+        List<AppRole> stepRoles = new ArrayList<>();
         List<AppUser> approvers = new ArrayList<>();
         for (StepForm s : steps) {
             if (s.name() == null || s.name().isBlank()) throw new ApiException("Cada passo precisa de um nome.");
-            if (s.approverUserId() == null) throw new ApiException("Cada passo precisa de um aprovador.");
-            AppUser u = users.findById(s.approverUserId()).filter(AppUser::isActive)
-                .orElseThrow(() -> new ApiException("O aprovador do passo '" + s.name() + "' nao existe ou esta inactivo."));
+            if (s.approverRoleId() == null) throw new ApiException("Seleccione o perfil aprovador do passo '" + s.name() + "'.");
+            AppRole r = roles.findById(s.approverRoleId())
+                .filter(x -> x.isActive() && (x.getDepartment() == null || x.getDepartment().isActive()))
+                .filter(x -> AppRole.APPROVER.equals(x.getLevel()) || AppRole.ADMIN.equals(x.getLevel()))
+                .orElseThrow(() -> new ApiException("O perfil do passo '" + s.name() + "' nao e um perfil aprovador activo."));
+            AppUser u = null;
+            if (s.approverUserId() != null) {
+                u = users.findById(s.approverUserId()).filter(AppUser::isActive)
+                    .orElseThrow(() -> new ApiException("O aprovador do passo '" + s.name() + "' nao existe ou esta inactivo."));
+                boolean holds = u.getRoles().stream().anyMatch(x -> x.getId().equals(r.getId()));
+                if (!holds) throw new ApiException(u.getFullName() + " nao tem o perfil " + r.getName() + " (passo '" + s.name() + "').");
+            } else {
+                long n = jpa.count("select count(u) from AppUser u join u.roles x where x.id = :r and u.active = true", p("r", r.getId()));
+                if (n == 0) throw new ApiException("Nenhum utilizador activo tem o perfil " + r.getName() + " (passo '" + s.name() + "').");
+            }
+            stepRoles.add(r);
             approvers.add(u);
         }
         List<Map<String, Object>> before = steps(scope);
@@ -102,6 +136,7 @@ public class FlowService {
             st.setFlow(flow);
             st.setStepNo(no++);
             st.setName(steps.get(i).name().trim());
+            st.setApproverRole(stepRoles.get(i));
             st.setApprover(approvers.get(i));
             stepRepo.save(st);
         }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.ubagroup.vendorportal.service.ApprovalService;
+import com.ubagroup.vendorportal.common.CurrentUser;
 import com.ubagroup.vendorportal.service.ContractService;
 import com.ubagroup.vendorportal.service.ContractService.ContractForm;
 import com.ubagroup.vendorportal.service.DocumentService;
@@ -25,8 +26,11 @@ public class ContractController {
     private final VendorService vendors;
     private final DocumentService documents;
     private final ApprovalService approvals;
+    private final CurrentUser currentUser;
 
-    public ContractController(ContractService contracts, VendorService vendors, DocumentService documents, ApprovalService approvals) {
+    public ContractController(ContractService contracts, VendorService vendors, DocumentService documents, ApprovalService approvals,
+                              CurrentUser currentUser) {
+        this.currentUser = currentUser;
         this.contracts = contracts;
         this.vendors = vendors;
         this.documents = documents;
@@ -58,7 +62,9 @@ public class ContractController {
     @GetMapping("/contracts/{id}/edit")
     public String edit(@PathVariable long id, Model model) {
         fillForm(model);
-        model.addAttribute("c", contracts.get(id));
+        Map<String, Object> c = contracts.get(id);
+        model.addAttribute("c", c);
+        model.addAttribute("categories", vendors.categoriesIncluding((Integer) c.get("serviceCategoryId")));
         return "contract-form";
     }
 
@@ -74,6 +80,7 @@ public class ContractController {
     }
 
     private void fillForm(Model model) {
+        currentUser.requireContractEdit();
         model.addAttribute("active", "contracts");
         model.addAttribute("vendorOptions", vendors.approvedForSelect());
         model.addAttribute("categories", vendors.categories());

@@ -14,8 +14,8 @@
           <p>Vendor and contract activity across the Corporate Services department.</p>
         </div>
         <div class="actions">
-          <a class="btn primary" th:href="@{/vendors(new=1)}"><svg class="ic"><use href="#i-plus"/></svg>Register new vendor</a>
-          <a class="btn primary" th:href="@{/contracts/new}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
+          <a class="btn primary" th:if="${can.vendorEdit}" th:href="@{/vendors(new=1)}"><svg class="ic"><use href="#i-plus"/></svg>Register new vendor</a>
+          <a class="btn primary" th:if="${can.contractEdit}" th:href="@{/contracts/new}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
         </div>
       </div>
 
