@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Dashboard')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('dashboard')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Dashboard')}"></header>
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <h1>Welcome back, <span th:text="${#strings.arraySplit(me.fullName, ' ')[0]}">Admin</span></h1>
+          <p>Vendor and contract activity across the Corporate Services department.</p>
+        </div>
+        <div class="actions">
+          <a class="btn primary" th:href="@{/vendors(new=1)}"><svg class="ic"><use href="#i-plus"/></svg>Register new vendor</a>
+          <a class="btn primary" th:href="@{/contracts/new}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
+        </div>
+      </div>
+
+      <div class="stats" id="contract-stats">
+        <a class="stat link" th:href="@{/contracts(status='DRAFT')}"><div class="lbl"><i style="background:#9ca3af"></i>Draft</div><div class="num" data-k="DRAFT">–</div><div class="sub">contracts</div></a>
+        <a class="stat link" th:href="@{/contracts(status='IN_APPROVAL')}"><div class="lbl"><i style="background:#2563eb"></i>In approval</div><div class="num" data-k="IN_APPROVAL">–</div><div class="sub">contracts</div></a>
+        <a class="stat link" th:href="@{/contracts(status='ACTIVE')}"><div class="lbl"><i style="background:#0f7b4f"></i>Active</div><div class="num" data-k="ACTIVE">–</div><div class="sub">contracts</div></a>
+        <a class="stat link" th:href="@{/contracts(status='TERMINATED')}"><div class="lbl"><i style="background:#333"></i>Terminated</div><div class="num" data-k="TERMINATED">–</div><div class="sub">contracts</div></a>
+        <a class="stat link" th:href="@{/contracts(status='EXPIRING')}"><div class="lbl"><i style="background:#d97706"></i><span id="exp-label">Expiring soon</span></div><div class="num" id="expiring" style="color:#d97706">–</div><div class="sub">active contracts</div></a>
+        <a class="stat link" th:href="@{/approvals}"><div class="lbl"><i style="background:#DA291C"></i>My pending</div><div class="num" id="mine" style="color:#DA291C">–</div><div class="sub" style="color:#DA291C">approval tasks</div></a>
+      </div>
+
+      <div class="stats four" id="vendor-stats">
+        <a class="stat link" th:href="@{/vendors(status='PENDING')}"><div class="lbl"><i style="background:#f59e0b"></i>Pending</div><div class="num" data-k="PENDING">–</div><div class="sub">vendors</div></a>
+        <a class="stat link" th:href="@{/vendors(status='UNDER_REVIEW')}"><div class="lbl"><i style="background:#2563eb"></i>Under review</div><div class="num" data-k="UNDER_REVIEW">–</div><div class="sub">vendors</div></a>
+        <a class="stat link" th:href="@{/vendors(status='APPROVED')}"><div class="lbl"><i style="background:#0f7b4f"></i>Approved</div><div class="num" data-k="APPROVED">–</div><div class="sub">vendors</div></a>
+        <a class="stat link" th:href="@{/vendors(status='REJECTED')}"><div class="lbl"><i style="background:#8a1c13"></i>Rejected</div><div class="num" data-k="REJECTED">–</div><div class="sub">vendors</div></a>
+      </div>
+
+      <div class="charts">
+        <div class="card">
+          <div class="chart-head"><h2>Vendors by Service Area</h2><span class="muted mono" id="areas-count"></span></div>
+          <div class="bars" id="bars"></div>
+        </div>
+        <div class="card">
+          <h2>Contracts by Status</h2>
+          <div class="donut-wrap"><div id="donut"></div><div class="legend" id="legend"></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/dashboard.js}"></script>
+</body>
+</html>

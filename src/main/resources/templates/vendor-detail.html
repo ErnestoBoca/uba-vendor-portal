@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Vendor')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('vendors')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Vendor Onboarding')}"></header>
+    <main class="content" th:attr="data-id=${v.id},data-status=${v.status}" id="page">
+      <p><a th:href="@{/vendors}">&larr; Back to vendors</a></p>
+      <div class="page-head">
+        <div>
+          <h1 th:text="${v.name}">Vendor</h1>
+          <p><span class="mono" th:text="${v.code}">UBA-VND-000001</span> &nbsp; <span th:replace="~{fragments/shell :: status(${v.status})}"></span></p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btn-edit" type="button" th:if="${v.status == 'PENDING'}">Edit</button>
+          <button class="btn" data-review="START" type="button" th:if="${v.status == 'PENDING'}">Start review</button>
+          <button class="btn danger" data-review="REJECT" type="button" th:if="${v.status == 'PENDING' or v.status == 'UNDER_REVIEW'}">Reject</button>
+          <button class="btn green" data-review="APPROVE" type="button" th:if="${v.status == 'PENDING' or v.status == 'UNDER_REVIEW'}">Approve</button>
+          <a class="btn primary" th:if="${v.status == 'APPROVED'}" th:href="@{/contracts/new(vendorId=${v.id})}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="card">
+            <h2>Company information</h2>
+            <dl class="kv">
+              <dt>Email</dt><dd th:text="${v.email}"></dd>
+              <dt>Mobile</dt><dd th:text="${v.mobile}"></dd>
+              <dt>Phone</dt><dd th:text="${v.phone} ?: '—'"></dd>
+              <dt>NUIT</dt><dd class="mono" th:text="${v.nuit}"></dd>
+              <dt>Service area</dt><dd th:text="${v.serviceArea}"></dd>
+              <dt>Registration no.</dt><dd th:text="${v.companyRegNumber} ?: '—'"></dd>
+              <dt>Address</dt><dd th:text="${v.address}"></dd>
+              <dt>Service description</dt><dd th:text="${v.serviceDescription} ?: '—'"></dd>
+              <dt>Registered</dt><dd th:text="${#temporals.format(v.createdAt, 'dd/MM/yyyy HH:mm')} + ' by ' + ${v.createdBy}"></dd>
+              <dt th:if="${v.reviewedAt != null}">Review</dt>
+              <dd th:if="${v.reviewedAt != null}" th:text="${v.reviewedBy} + ' · ' + ${#temporals.format(v.reviewedAt, 'dd/MM/yyyy HH:mm')} + (${v.reviewComment} != null ? ' — ' + ${v.reviewComment} : '')"></dd>
+            </dl>
+          </div>
+
+          <div class="card flush">
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company contacts</h2><button class="btn sm" id="btn-contact" type="button"><svg class="ic"><use href="#i-plus"/></svg>Add contact</button></div>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Name</th><th>Function</th><th>Phone</th><th>Email</th><th></th></tr></thead>
+              <tbody>
+                <tr th:each="c : ${contacts}">
+                  <td class="name"><span th:text="${c.fullName}">Name</span> <span class="badge b-ACTIVE" th:if="${c.isPrimary}">Primary</span></td>
+                  <td th:text="${c.jobTitle}"></td><td th:text="${c.phone}"></td><td th:text="${c.email} ?: '—'"></td>
+                  <td><button class="btn sm danger" type="button" th:unless="${c.isPrimary}" th:data-contact-del="${c.id}">Remove</button></td>
+                </tr>
+              </tbody></table></div>
+          </div>
+
+          <div class="card flush">
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company documents</h2><button class="btn sm" id="doc-open" type="button"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
+            <div th:replace="~{fragments/documents :: panel(${docs}, true)}"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Contracts</h2>
+            <p class="muted" th:if="${#lists.isEmpty(contracts)}">No contracts yet.</p>
+            <ul class="timeline">
+              <li th:each="c : ${contracts}" th:classappend="${c.status}">
+                <a th:href="@{/contracts/{id}(id=${c.id})}" th:text="${c.number}">CTR</a> — <span th:text="${c.title}"></span>
+                <div><span th:replace="~{fragments/shell :: status(${c.status})}"></span></div>
+              </li>
+            </ul>
+          </div>
+          <div class="card">
+            <h2>Recent activity</h2>
+            <ul class="timeline">
+              <li th:each="h : ${history}"><b th:text="${h.action}"></b> <span class="muted" th:text="${h.entityType}"></span>
+                <div class="muted" th:text="${h.actor} + ' · ' + ${#temporals.format(h.happenedAt, 'dd/MM/yyyy HH:mm')}"></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- Rever / aprovar / rejeitar -->
+<div class="modal" id="review-modal">
+  <h2 id="review-title">Review</h2>
+  <div class="err" id="review-err"></div>
+  <div class="field"><label>Comment <span class="req" id="review-req" style="display:none">*</span></label><textarea id="review-comment"></textarea></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('review-modal')">Cancel</button><button class="btn primary" type="button" id="review-save">Confirm</button></div>
+</div>
+
+<!-- Novo contacto -->
+<div class="modal" id="contact-modal">
+  <h2>Add contact</h2>
+  <div class="err" id="contact-err"></div>
+  <div class="field"><label>Full name <span class="req">*</span></label><input id="ct-name"></div>
+  <div class="grid2"><div class="field"><label>Phone <span class="req">*</span></label><input id="ct-phone" placeholder="+258 841234567"></div>
+    <div class="field"><label>Function <span class="req">*</span></label><input id="ct-job"></div></div>
+  <div class="field"><label>Email</label><input id="ct-email" type="email"></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('contact-modal')">Cancel</button><button class="btn primary" type="button" id="ct-save">Save</button></div>
+</div>
+
+<!-- Editar vendor (so Pending) -->
+<div class="modal" id="edit-modal" style="width:min(640px,94%);max-height:90vh;overflow:auto">
+  <h2>Edit vendor</h2>
+  <div class="err" id="edit-err"></div>
+  <div class="grid2">
+    <div class="field"><label>Supplier name</label><input id="e-name" th:value="${v.name}"></div>
+    <div class="field"><label>Email</label><input id="e-email" th:value="${v.email}"></div>
+    <div class="field"><label>Mobile</label><input id="e-mobile" th:value="${v.mobile}"></div>
+    <div class="field"><label>Phone</label><input id="e-phone" th:value="${v.phone}"></div>
+    <div class="field"><label>NUIT</label><input id="e-nuit" maxlength="9" th:value="${v.nuit}"></div>
+    <div class="field"><label>Service area</label>
+      <select id="e-cat"><option th:each="c : ${categories}" th:value="${c.id}" th:text="${c.name}" th:selected="${c.id == v.serviceCategoryId}">IT</option></select></div>
+  </div>
+  <div class="field"><label>Registration no.</label><input id="e-reg" th:value="${v.companyRegNumber}"></div>
+  <div class="field"><label>Address</label><textarea id="e-address" th:text="${v.address}"></textarea></div>
+  <div class="field"><label>Service description</label><textarea id="e-descr" th:text="${v.serviceDescription}"></textarea></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('edit-modal')">Cancel</button><button class="btn primary" type="button" id="e-save">Save changes</button></div>
+</div>
+
+<div th:replace="~{fragments/documents :: uploadModal('VENDOR', ${v.id}, ${docTypes})}"></div>
+
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/documents.js}"></script>
+<script th:src="@{/js/vendor-detail.js}"></script>
+</body>
+</html>

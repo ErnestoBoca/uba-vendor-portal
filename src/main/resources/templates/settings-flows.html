@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Approval flows')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('settings-flows')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Settings · Approval Flows')}"></header>
+    <main class="content" id="page" th:attr="data-scope=${scope}">
+      <div class="page-head"><div><h1>Approval Flows</h1><p>Define who approves contracts for each service type. Steps run in order; each step has exactly one approver.</p></div></div>
+      <div class="flow-layout">
+        <div class="card scope-list" style="padding:10px;align-self:start">
+          <a th:each="s : ${scopes}" th:href="@{/settings/flows(scope=${s.id})}" th:classappend="${s.id == scope} ? 'on'">
+            <span th:text="${s.name}">IT</span>
+            <span class="muted" th:text="${s.steps > 0} ? ${s.steps} + ' step(s)' : (${s.id == 0} ? '—' : 'default')"></span>
+          </a>
+        </div>
+        <div class="card">
+          <h2 th:text="${scopeName}">Scope</h2>
+          <p class="muted" th:if="${#lists.isEmpty(steps) and scope != 0}">This service type has no flow of its own, so the <b>Default</b> flow is used. Add steps below to create a specific one.</p>
+          <div class="err" id="f-err"></div>
+          <div id="steps">
+            <div class="step-row" th:each="st : ${steps}">
+              <div class="step-no">1</div>
+              <input data-s="name" th:value="${st.name}" placeholder="Step name (e.g. Legal Review)">
+              <select data-s="user"><option value="">Approver…</option>
+                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.username} + ')'" th:selected="${u.id == st.approverId}">User</option></select>
+              <div style="white-space:nowrap"><button class="btn sm" type="button" data-up>↑</button> <button class="btn sm" type="button" data-down>↓</button> <button class="btn sm danger" type="button" data-rm>✕</button></div>
+            </div>
+          </div>
+          <template id="step-tpl">
+            <div class="step-row">
+              <div class="step-no">1</div>
+              <input data-s="name" placeholder="Step name (e.g. Legal Review)">
+              <select data-s="user"><option value="">Approver…</option>
+                <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.username} + ')'">User</option></select>
+              <div style="white-space:nowrap"><button class="btn sm" type="button" data-up>↑</button> <button class="btn sm" type="button" data-down>↓</button> <button class="btn sm danger" type="button" data-rm>✕</button></div>
+            </div>
+          </template>
+          <div class="actions" style="margin-top:12px;justify-content:space-between">
+            <button class="btn" type="button" id="add-step"><svg class="ic"><use href="#i-plus"/></svg>Add step</button>
+            <div class="actions">
+              <button class="btn danger" type="button" id="del-flow" th:if="${scope != 0 and !#lists.isEmpty(steps)}">Use default flow</button>
+              <button class="btn primary" type="button" id="save-flow">Save flow</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/flows.js}"></script>
+</body>
+</html>

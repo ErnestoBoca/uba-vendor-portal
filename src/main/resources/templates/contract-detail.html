@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Contract')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('contracts')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Contracts')}"></header>
+    <main class="content" id="page" th:attr="data-id=${c.id}">
+      <p><a th:href="@{/contracts}">&larr; Back to contracts</a></p>
+      <div class="page-head">
+        <div>
+          <h1 th:text="${c.title}">Contract</h1>
+          <p><span class="mono" th:text="${c.number}">CTR</span> &nbsp; <span th:replace="~{fragments/shell :: status(${c.status})}"></span>
+             &nbsp; <a th:href="@{/vendors/{id}(id=${c.vendorId})}" th:text="${c.vendorName}">Vendor</a></p>
+        </div>
+        <div class="actions" th:if="${c.status == 'DRAFT' or c.status == 'REJECTED'}">
+          <a class="btn" th:href="@{/contracts/{id}/edit(id=${c.id})}">Edit</a>
+          <button class="btn primary" id="btn-submit" type="button">Submit for approval</button>
+        </div>
+      </div>
+      <div class="err" id="c-err"></div>
+      <div class="card" th:if="${c.status == 'IN_APPROVAL'}" style="background:#e8f0fe;border-color:#c6d8fb">This contract is in approval. It becomes <b>Active</b> only after every step of the flow is approved.</div>
+      <div class="card" th:if="${c.status == 'ACTIVE'}" style="background:#e6f6ee;border-color:#b8e5cf">Active since <b th:text="${#temporals.format(c.activatedAt, 'dd/MM/yyyy HH:mm')}"></b>.</div>
+
+      <div class="tabs">
+        <button class="on" type="button" data-tab="t-details">Details</button>
+        <button type="button" data-tab="t-docs">Documents <span class="muted" th:text="'(' + ${#lists.size(docs)} + ')'"></span></button>
+        <button type="button" data-tab="t-approval">Approval</button>
+      </div>
+
+      <div class="tabpane on" id="t-details"><div class="card"><dl class="kv">
+        <dt>Service type</dt><dd th:text="${c.serviceArea}"></dd>
+        <dt>Contract type</dt><dd th:text="${#strings.capitalize(#strings.toLowerCase(c.contractType))}"></dd>
+        <dt>Object</dt><dd th:text="${c.objectDescription} ?: '—'"></dd>
+        <dt>Signing date</dt><dd th:text="${#temporals.format(c.signingDate, 'dd/MM/yyyy')} ?: '—'"></dd>
+        <dt>Period</dt><dd th:text="${#temporals.format(c.startDate, 'dd/MM/yyyy')} + ' → ' + ${#temporals.format(c.endDate, 'dd/MM/yyyy')}"></dd>
+        <dt>Value</dt><dd th:text="${c.valueAmount != null} ? ${#numbers.formatDecimal(c.valueAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${c.currency} : '—'"></dd>
+        <dt>Payment terms</dt><dd th:text="${c.paymentTerms} ?: '—'"></dd>
+        <dt>Termination notice</dt><dd th:text="${c.terminationNoticeDays != null} ? ${c.terminationNoticeDays} + ' days' : '—'"></dd>
+        <dt>Penalty clause</dt><dd th:text="${c.penaltyClause} ?: '—'"></dd>
+        <dt>SLA</dt><dd th:text="${c.slaTerms} ?: '—'"></dd>
+        <dt>Governing law</dt><dd th:text="${c.governingLaw}"></dd>
+        <dt>DPA</dt><dd th:text="${#strings.capitalizeWords(#strings.toLowerCase(#strings.replace(c.dpaStatus, '_', ' ')))}"></dd>
+        <dt>Audit rights</dt><dd th:text="${c.auditRights} ? 'Yes' : 'No'"></dd>
+        <dt>Auto-renew</dt><dd th:text="${c.autoRenew} ? 'Yes (notice ' + ${c.renewalNoticeDays} + ' days)' : 'No'"></dd>
+        <dt>Signatories</dt><dd th:text="'Vendor: ' + (${c.vendorSignatory} ?: '—') + '  |  UBA: ' + (${c.bankSignatory} ?: '—')"></dd>
+        <dt>Owner</dt><dd th:text="${c.ownerName} ?: '—'"></dd>
+        <dt>Created</dt><dd th:text="${#temporals.format(c.createdAt, 'dd/MM/yyyy HH:mm')} + ' by ' + ${c.createdBy}"></dd>
+      </dl></div></div>
+
+      <div class="tabpane" id="t-docs"><div class="card flush">
+        <div class="toolbar"><h2 style="margin:0;flex:1">Contract documents</h2><button class="btn sm" id="doc-open" type="button"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
+        <div th:replace="~{fragments/documents :: panel(${docs}, ${c.status == 'DRAFT' or c.status == 'REJECTED'})}"></div>
+      </div></div>
+
+      <div class="tabpane" id="t-approval">
+        <div class="card" th:if="${#lists.isEmpty(history)}"><p class="muted" style="margin:0">Not submitted yet. When you submit, the flow for <b th:text="${c.serviceArea}"></b> (or the default flow) is applied.</p></div>
+        <div class="card" th:each="r : ${history}">
+          <div class="chart-head"><h2>Request #<span th:text="${r.requestId}"></span> <span th:replace="~{fragments/shell :: status(${r.status})}"></span></h2>
+            <span class="muted" th:text="'Submitted by ' + ${r.submittedBy} + ' · ' + ${#temporals.format(r.submittedAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+          <ul class="timeline">
+            <li th:each="t : ${r.tasks}" th:classappend="${t.decision}">
+              <b th:text="${t.stepNo} + '. ' + ${t.stepName}"></b> — <span th:text="${t.approverName}"></span>
+              <span th:replace="~{fragments/shell :: status(${t.decision})}"></span>
+              <div class="muted" th:if="${t.decidedAt != null}" th:text="${#temporals.format(t.decidedAt, 'dd/MM/yyyy HH:mm')}"></div>
+              <div th:if="${t.comments != null}" th:text="'“' + ${t.comments} + '”'"></div>
+              <div class="reassign" th:each="x : ${t.reassignments}" th:text="'Reassigned from ' + ${x.fromName} + ' to ' + ${x.toName} + ' by ' + ${x.byName} + ' (' + ${#temporals.format(x.happenedAt, 'dd/MM/yyyy HH:mm')} + '): ' + ${x.reason}"></div>
+              <div class="actions" style="margin-top:8px" th:if="${t.decision == 'PENDING' and t.approverId == me.id}">
+                <button class="btn sm green" type="button" data-decide="APPROVE" th:data-task="${t.taskId}">Approve</button>
+                <button class="btn sm" type="button" data-decide="RETURN" th:data-task="${t.taskId}">Return</button>
+                <button class="btn sm danger" type="button" data-decide="REJECT" th:data-task="${t.taskId}">Reject</button>
+                <button class="btn sm" type="button" data-reassign th:data-task="${t.taskId}" th:data-current="${t.approverId}">Reassign</button>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div th:replace="~{fragments/approval-modals :: modals(${users})}"></div>
+<div th:replace="~{fragments/documents :: uploadModal('CONTRACT', ${c.id}, ${docTypes})}"></div>
+
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/documents.js}"></script>
+<script th:src="@{/js/approval-actions.js}"></script>
+<script th:src="@{/js/contract-detail.js}"></script>
+</body>
+</html>

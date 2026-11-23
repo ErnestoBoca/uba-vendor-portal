@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title th:text="${title} + ' · UBA Vendor Portal'">UBA Vendor Portal</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+
+<!-- Icones (sprite SVG, estilo linha) -->
+<svg th:fragment="icons" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-check-list" viewBox="0 0 24 24"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M12 6h8M12 12h8M12 18h8"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M18 14.5c2.5.3 4 1.8 4 4.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 1 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+</svg>
+
+<aside class="sidebar" th:fragment="sidebar(active)">
+  <div class="brand">
+    <div class="brand-badge">UBA</div>
+    <div><b>Vendor Portal</b><small>CORPORATE SERVICES</small></div>
+  </div>
+  <nav class="nav">
+    <a th:href="@{/}" th:classappend="${active == 'dashboard'} ? 'active'"><svg class="ic"><use href="#i-dashboard"/></svg>Dashboard</a>
+    <a th:href="@{/vendors}" th:classappend="${active == 'vendors'} ? 'active'"><svg class="ic"><use href="#i-user-plus"/></svg>Vendor Onboarding</a>
+    <a th:href="@{/contracts}" th:classappend="${active == 'contracts'} ? 'active'"><svg class="ic"><use href="#i-file"/></svg>Contracts</a>
+    <a th:href="@{/approvals}" th:classappend="${active == 'approvals'} ? 'active'"><svg class="ic"><use href="#i-check-list"/></svg>Approvals
+      <span class="pill" th:if="${myPending > 0}" th:text="${myPending}">2</span></a>
+
+    <div class="group">SETTINGS</div>
+    <a th:href="@{/settings/general}" th:classappend="${active == 'settings-general'} ? 'active'"><svg class="ic"><use href="#i-sliders"/></svg>General</a>
+    <a th:href="@{/settings/flows}" th:classappend="${active == 'settings-flows'} ? 'active'"><svg class="ic"><use href="#i-cog"/></svg>Approval Flows</a>
+    <a th:href="@{/settings/users}" th:classappend="${active == 'settings-users'} ? 'active'"><svg class="ic"><use href="#i-users"/></svg>Users</a>
+
+    <div class="group">COMING SOON</div>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-folder"/></svg>Document Collection</span>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-shield"/></svg>Compliance Tracking</span>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-clipboard"/></svg>DD Checklist</span>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-gauge"/></svg>Risk Scoring</span>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-history"/></svg>Audit Trail</span>
+    <span class="soon" title="Em breve"><svg class="ic"><use href="#i-chart"/></svg>Reports</span>
+  </nav>
+  <div class="side-foot">UBA MOZAMBIQUE · V0.1</div>
+</aside>
+
+<header class="topbar" th:fragment="topbar(title)">
+  <div class="title" th:text="${title}">Title</div>
+  <div class="right">
+    <a class="bell" th:href="@{/approvals}" title="Approvals"><svg class="ic"><use href="#i-bell"/></svg><span class="dot" th:if="${myPending > 0}"></span></a>
+    <div class="userbox">
+      <div class="avatar" th:text="${#strings.toUpperCase(#strings.substring(me.fullName, 0, 1))}">A</div>
+      <span th:text="${me.fullName}">Administrator</span>
+      <form th:action="@{/logout}" method="post"><button class="linkbtn" type="submit" title="Sign out">Sign out</button></form>
+    </div>
+  </div>
+</header>
+
+<div th:fragment="status(s)" style="display:inline">
+  <span class="badge" th:classappend="'b-' + ${s}"
+        th:text="${#strings.capitalizeWords(#strings.toLowerCase(#strings.replace(s, '_', ' ')))}">Status</span>
+</div>
+
+<th:block th:fragment="scripts">
+  <div id="toasts"></div>
+  <script th:src="@{/js/api.js}"></script>
+</th:block>
+
+</body>
+</html>

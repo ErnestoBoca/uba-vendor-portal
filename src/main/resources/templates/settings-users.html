@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Users')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('settings-users')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Settings · Users')}"></header>
+    <main class="content">
+      <div class="page-head"><div><h1>Users</h1><p>People who can sign in and be assigned as approvers. (Active Directory sign-in comes later.)</p></div>
+        <div class="actions"><button class="btn primary" type="button" id="u-new"><svg class="ic"><use href="#i-plus"/></svg>New user</button></div></div>
+      <div class="card flush"><div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          <tr th:each="u : ${users}">
+            <td class="name" th:text="${u.fullName}">Name</td><td class="mono" th:text="${u.username}"></td><td th:text="${u.email}"></td><td th:text="${u.roleName}"></td>
+            <td><span class="badge" th:classappend="${u.active} ? 'b-ACTIVE' : 'b-CLOSED'" th:text="${u.active} ? 'Active' : 'Inactive'"></span></td>
+            <td><button class="btn sm" type="button" data-edit th:data-id="${u.id}" th:data-name="${u.fullName}" th:data-email="${u.email}"
+                        th:data-role="${u.roleId}" th:data-active="${u.active}" th:data-username="${u.username}">Edit</button></td>
+          </tr>
+        </tbody></table></div></div>
+    </main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="u-modal">
+  <h2 id="u-title">New user</h2>
+  <div class="err" id="u-err"></div>
+  <div class="grid2">
+    <div class="field"><label>Username <span class="req">*</span></label><input id="u-username"></div>
+    <div class="field"><label>Full name <span class="req">*</span></label><input id="u-name"></div>
+    <div class="field"><label>Email <span class="req">*</span></label><input id="u-email" type="email"></div>
+    <div class="field"><label>Role <span class="req">*</span></label>
+      <select id="u-role"><option th:each="r : ${roles}" th:value="${r.id}" th:text="${r.name}">Role</option></select></div>
+  </div>
+  <div class="field"><label id="u-pass-label">Password <span class="req">*</span></label><input id="u-pass" type="password" autocomplete="new-password"><div class="hint" id="u-pass-hint">At least 6 characters.</div></div>
+  <div class="field" id="u-active-row"><label style="font-weight:400"><input type="checkbox" id="u-active" checked> Active</label></div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('u-modal')">Cancel</button><button class="btn primary" type="button" id="u-save">Save</button></div>
+</div>
+
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/users.js}"></script>
+</body>
+</html>

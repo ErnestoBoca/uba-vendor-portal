@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Approvals')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('approvals')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Approvals')}"></header>
+    <main class="content">
+      <div class="page-head"><div><h1>Approvals</h1><p>Requests waiting for a decision. Each step is assigned to one person; use Reassign if they are unavailable.</p></div></div>
+      <div class="tabs">
+        <a th:href="@{/approvals(tab='mine')}" th:classappend="${tab == 'mine'} ? 'on'">My pending <span class="pill" style="display:inline-grid;margin-left:6px" th:if="${myPending > 0}" th:text="${myPending}">2</span></a>
+        <a th:href="@{/approvals(tab='all')}" th:classappend="${tab == 'all'} ? 'on'">All pending</a>
+        <a th:href="@{/approvals(tab='decided')}" th:classappend="${tab == 'decided'} ? 'on'">Decided</a>
+      </div>
+      <div class="card flush">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Contract</th><th>Vendor</th><th>Step</th><th>Approver</th><th>Submitted by</th>
+            <th th:text="${tab == 'decided'} ? 'Decided' : 'Submitted'">Submitted</th><th>Status</th><th th:text="${tab == 'decided'} ? 'Comment' : 'Actions'">Actions</th></tr></thead>
+          <tbody>
+            <tr th:each="t : ${tasks}">
+              <td><a th:href="@{/contracts/{id}(id=${t.entityId})}" th:text="${t.contractNumber}" class="mono">CTR</a><div class="name" th:text="${t.title}"></div></td>
+              <td th:text="${t.vendorName}"></td>
+              <td th:text="${t.stepNo} + '. ' + ${t.stepName}"></td>
+              <td th:text="${t.approverName}"></td>
+              <td th:text="${t.submittedBy}"></td>
+              <td th:text="${tab == 'decided'} ? ${#temporals.format(t.decidedAt, 'dd/MM/yyyy HH:mm')} : ${#temporals.format(t.submittedAt, 'dd/MM/yyyy HH:mm')}"></td>
+              <td><span th:replace="~{fragments/shell :: status(${t.decision})}"></span></td>
+              <td th:if="${tab == 'decided'}" th:text="${t.comments}" class="muted"></td>
+              <td th:unless="${tab == 'decided'}" style="white-space:nowrap">
+                <button class="btn sm green" type="button" data-decide="APPROVE" th:data-task="${t.taskId}">Approve</button>
+                <button class="btn sm" type="button" data-decide="RETURN" th:data-task="${t.taskId}">Return</button>
+                <button class="btn sm danger" type="button" data-decide="REJECT" th:data-task="${t.taskId}">Reject</button>
+                <button class="btn sm" type="button" data-reassign th:data-task="${t.taskId}" th:data-current="${t.approverId}">Reassign</button>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(tasks)}"><td colspan="8" class="empty">Nothing here.</td></tr>
+          </tbody></table></div>
+      </div>
+    </main>
+  </div>
+</div>
+<div th:replace="~{fragments/approval-modals :: modals(${users})}"></div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/approval-actions.js}"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# SQL Server local para desenvolvimento.
+# Uso:  docker compose up -d     (e depois criar a base de dados "vms", ver README)
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: vms-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Uba_Vms_2026!"
+    ports:
+      - "1433:1433"
+    volumes:
+      - vms-data:/var/opt/mssql
+volumes:
+  vms-data:

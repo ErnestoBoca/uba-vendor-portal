@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · UBA Vendor Portal</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="login-wrap">
+  <section class="login-hero">
+    <img th:src="@{/img/uba-logo.svg}" alt="UBA">
+    <div>
+      <h1>Vendor Portal</h1>
+      <p>Vendor onboarding, contracts and approvals for the Corporate Services department.</p>
+    </div>
+    <small>UBA Mozambique</small>
+  </section>
+  <section class="login-form">
+    <form th:action="@{/login}" method="post">
+      <h2>Sign in</h2>
+      <p class="muted" style="margin-bottom:24px">Use your portal credentials.</p>
+      <div class="err show" th:if="${param.error}">Invalid username or password.</div>
+      <div class="hint" style="margin-bottom:12px;color:#0f7b4f" th:if="${param.logout}">You have been signed out.</div>
+      <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" autofocus required></div>
+      <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn primary" style="width:100%;justify-content:center" type="submit">Sign in</button>
+    </form>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('General settings')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('settings-general')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Settings · General')}"></header>
+    <main class="content">
+      <div class="page-head"><div><h1>General</h1><p>Portal-wide rules.</p></div></div>
+      <div class="err" id="s-err"></div>
+      <div class="card" style="max-width:820px">
+        <div class="switch-row">
+          <div><b>Segregation of duties</b><div class="muted">When on, the person who submits a contract cannot approve their own request. Keep it off while only the admin user exists.</div></div>
+          <label style="margin:0"><input type="checkbox" id="s-sod" th:checked="${s['enforce_segregation_of_duties'] == 'true'}"> Enforce</label>
+        </div>
+        <div class="switch-row">
+          <div><b>Contract expiry warning</b><div class="muted">Active contracts ending within this many days are highlighted on the dashboard.</div></div>
+          <div style="width:140px"><input id="s-warn" type="number" min="1" max="365" th:value="${s['contract_expiry_warning_days']}"></div>
+        </div>
+        <div class="actions" style="justify-content:flex-end;margin-top:16px"><button class="btn primary" type="button" id="s-save">Save settings</button></div>
+      </div>
+    </main>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script>
+document.getElementById('s-save').addEventListener('click', ev => UI.run(ev.currentTarget, 's-err', async () => {
+  await Api.put('/api/settings', {
+    enforce_segregation_of_duties: document.getElementById('s-sod').checked ? 'true' : 'false',
+    contract_expiry_warning_days: UI.val('s-warn')
+  });
+  UI.toast('Settings saved.', 'ok');
+}));
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Contract')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('contracts')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Contracts')}"></header>
+    <main class="content" id="page" th:attr="data-id=${c != null ? c.id : ''}">
+      <p><a th:href="@{/contracts}">&larr; Back to contracts</a></p>
+      <div class="page-head"><div><h1 th:text="${c == null} ? 'New contract' : 'Edit contract ' + ${c.number}">New contract</h1>
+        <p>The service type selects the approval flow (configured in Settings &rsaquo; Approval Flows).</p></div></div>
+      <div class="err" id="c-err"></div>
+
+      <div class="card">
+        <h2>General</h2>
+        <div class="grid2">
+          <div class="field"><label>Vendor <span class="req">*</span></label>
+            <select id="c-vendor">
+              <option value="">Select an approved vendor</option>
+              <option th:each="v : ${vendorOptions}" th:value="${v.id}" th:attr="data-cat=${v.serviceCategoryId}"
+                      th:text="${v.code} + ' — ' + ${v.name}"
+                      th:selected="${(c != null and c.vendorId == v.id) or (c == null and presetVendorId != null and presetVendorId == v.id)}">Vendor</option>
+            </select><div class="hint">Only approved vendors are listed.</div></div>
+          <div class="field"><label>Service type <span class="req">*</span></label>
+            <select id="c-cat"><option value="">Select</option>
+              <option th:each="s : ${categories}" th:value="${s.id}" th:text="${s.name}" th:selected="${c != null and c.serviceCategoryId == s.id}">IT</option></select></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Title <span class="req">*</span></label><input id="c-title" th:value="${c?.title}"></div>
+          <div class="field"><label>Contract number</label><input id="c-number" th:value="${c != null ? c.number : ''}" placeholder="Leave blank to generate automatically"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Contract type <span class="req">*</span></label>
+            <select id="c-type"><option th:each="t : ${ {'SERVICE','SUPPLY','LICENSE','CONSULTING','OTHER'} }" th:value="${t}"
+                    th:text="${#strings.capitalize(#strings.toLowerCase(t))}" th:selected="${c != null and c.contractType == t}">Service</option></select></div>
+          <div class="field"><label>Contract owner (UBA)</label>
+            <select id="c-owner"><option value="">—</option>
+              <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName}" th:selected="${c != null and c.ownerUserId == u.id}">User</option></select></div>
+          <div class="field"><label>Governing law</label><input id="c-law" th:value="${c != null ? c.governingLaw : 'Mozambique'}"></div>
+        </div>
+        <div class="field"><label>Object / scope of the contract</label><textarea id="c-object" th:text="${c?.objectDescription}"></textarea></div>
+      </div>
+
+      <div class="card">
+        <h2>Dates &amp; value</h2>
+        <div class="grid3">
+          <div class="field"><label>Signing date</label><input id="c-sign" type="date" th:value="${c?.signingDate}"></div>
+          <div class="field"><label>Start date <span class="req">*</span></label><input id="c-start" type="date" th:value="${c?.startDate}"></div>
+          <div class="field"><label>End date <span class="req">*</span></label><input id="c-end" type="date" th:value="${c?.endDate}"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Value</label><input id="c-value" inputmode="decimal" th:value="${c?.valueAmount}" placeholder="0.00"></div>
+          <div class="field"><label>Currency</label>
+            <select id="c-cur"><option th:each="m : ${ {'MZN','USD','EUR','ZAR'} }" th:value="${m}" th:text="${m}" th:selected="${c != null and c.currency == m}">MZN</option></select></div>
+          <div class="field"><label>Termination notice (days)</label><input id="c-tnd" type="number" min="0" th:value="${c?.terminationNoticeDays}"></div>
+        </div>
+        <div class="field"><label>Payment terms</label><textarea id="c-pay" th:text="${c?.paymentTerms}"></textarea></div>
+      </div>
+
+      <div class="card">
+        <h2>Terms &amp; compliance</h2>
+        <div class="field"><label>Penalty clause</label><textarea id="c-pen" th:text="${c?.penaltyClause}"></textarea></div>
+        <div class="field"><label>SLA terms</label><textarea id="c-sla" th:text="${c?.slaTerms}"></textarea></div>
+        <div class="grid3">
+          <div class="field"><label>Data protection agreement (DPA)</label>
+            <select id="c-dpa"><option th:each="t : ${ {'NOT_REQUIRED','PENDING','SIGNED','EXPIRED'} }" th:value="${t}"
+                    th:text="${#strings.capitalizeWords(#strings.toLowerCase(#strings.replace(t, '_', ' ')))}" th:selected="${c != null and c.dpaStatus == t}">Not required</option></select></div>
+          <div class="field"><label>Renewal notice (days)</label><input id="c-rnd" type="number" min="0" th:value="${c != null ? c.renewalNoticeDays : 60}"></div>
+          <div class="field"><label>&nbsp;</label>
+            <label style="font-weight:400"><input type="checkbox" id="c-audit" th:checked="${c != null and c.auditRights}"> UBA has audit rights</label>
+            <label style="font-weight:400"><input type="checkbox" id="c-auto" th:checked="${c != null and c.autoRenew}"> Auto-renew</label></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Vendor signatory</label><input id="c-vsig" th:value="${c?.vendorSignatory}"></div>
+          <div class="field"><label>UBA signatory</label><input id="c-bsig" th:value="${c?.bankSignatory}"></div>
+        </div>
+      </div>
+
+      <div class="actions" style="justify-content:flex-end">
+        <a class="btn" th:href="@{/contracts}">Cancel</a>
+        <button class="btn primary" type="button" id="c-save">Save contract</button>
+      </div>
+    </main>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+<script th:src="@{/js/contract-form.js}"></script>
+</body>
+</html>

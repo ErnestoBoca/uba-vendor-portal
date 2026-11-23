@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Tabela de documentos (entidade VENDOR ou CONTRACT) + botao de upload -->
+<div th:fragment="panel(docs, canDelete)">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Type</th><th>File</th><th>Issued</th><th>Expires</th><th>Uploaded</th><th></th></tr></thead>
+      <tbody>
+        <tr th:each="d : ${docs}">
+          <td class="name" th:text="${d.name}">Doc</td>
+          <td th:text="${d.typeName}">Type</td>
+          <td><a th:href="@{/documents/{id}/download(id=${d.id})}" th:text="${d.fileName}">file.pdf</a></td>
+          <td th:text="${#temporals.format(d.issueDate, 'dd/MM/yyyy')}"></td>
+          <td th:text="${#temporals.format(d.expiryDate, 'dd/MM/yyyy')}"></td>
+          <td class="muted" th:text="${#temporals.format(d.uploadedAt, 'dd/MM/yyyy')} + ' · ' + ${d.uploadedBy}"></td>
+          <td><button class="btn sm danger" type="button" th:if="${canDelete}" th:data-doc-del="${d.id}">Remove</button></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(docs)}"><td colspan="7" class="empty">No documents yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div th:fragment="uploadModal(entityType, entityId, docTypes)" class="modal" id="doc-modal">
+  <h2>Upload document</h2>
+  <div class="err" id="doc-err"></div>
+  <input type="hidden" id="doc-entity-type" th:value="${entityType}">
+  <input type="hidden" id="doc-entity-id" th:value="${entityId}">
+  <div class="field"><label>Document name <span class="req">*</span></label><input id="doc-name"></div>
+  <div class="field"><label>Type</label>
+    <select id="doc-type"><option value="">—</option><option th:each="t : ${docTypes}" th:value="${t.id}" th:text="${t.name}">Type</option></select></div>
+  <div class="field"><label>File <span class="req">*</span></label><input id="doc-file" type="file"></div>
+  <div class="grid2">
+    <div class="field"><label>Issue date</label><input id="doc-issue" type="date"></div>
+    <div class="field"><label>Expiry date</label><input id="doc-expiry" type="date"></div>
+  </div>
+  <div class="foot"><button class="btn" type="button" onclick="UI.close('doc-modal')">Cancel</button><button class="btn primary" type="button" id="doc-save">Upload</button></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Modais partilhados: decidir (aprovar/devolver/rejeitar) e reatribuir. Usar com static/js/approval-actions.js -->
+<div th:fragment="modals(users)">
+  <div class="overlay" id="overlay"></div>
+  <div class="modal" id="decide-modal">
+    <h2 id="decide-title">Decision</h2>
+    <div class="err" id="decide-err"></div>
+    <div class="field"><label>Comment <span class="req" id="decide-req" style="display:none">*</span></label><textarea id="decide-comment"></textarea>
+      <div class="hint" id="decide-hint"></div></div>
+    <div class="foot"><button class="btn" type="button" onclick="UI.close('decide-modal')">Cancel</button><button class="btn primary" type="button" id="decide-save">Confirm</button></div>
+  </div>
+  <div class="modal" id="reassign-modal">
+    <h2>Reassign task</h2>
+    <p class="muted">Use this when the approver is unavailable. The change is recorded in the task history.</p>
+    <div class="err" id="reassign-err"></div>
+    <div class="field"><label>New approver <span class="req">*</span></label>
+      <select id="reassign-to"><option value="">Select a person</option>
+        <option th:each="u : ${users}" th:value="${u.id}" th:text="${u.fullName} + ' (' + ${u.username} + ')'">User</option></select></div>
+    <div class="field"><label>Reason <span class="req">*</span></label><textarea id="reassign-reason" placeholder="e.g. On leave until 30/11"></textarea></div>
+    <div class="foot"><button class="btn" type="button" onclick="UI.close('reassign-modal')">Cancel</button><button class="btn primary" type="button" id="reassign-save">Reassign</button></div>
+  </div>
+</div>
+</body>
+</html>

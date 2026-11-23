@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt">
+<head th:replace="~{fragments/shell :: head('Error')}"></head>
+<body>
+<svg th:replace="~{fragments/shell :: icons}"></svg>
+<div class="app">
+  <aside th:replace="~{fragments/shell :: sidebar('')}"></aside>
+  <div class="main">
+    <header th:replace="~{fragments/shell :: topbar('Error')}"></header>
+    <main class="content">
+      <div class="card"><h1>Something went wrong</h1><p th:text="${message}">Message</p><a class="btn" th:href="@{/}">Back to dashboard</a></div>
+    </main>
+  </div>
+</div>
+<th:block th:replace="~{fragments/shell :: scripts}"></th:block>
+</body>
+</html>
