@@ -15,14 +15,21 @@
           <p><span class="mono" th:text="${v.code}">UBA-VND-000001</span> &nbsp; <span th:replace="~{fragments/shell :: status(${v.status})}"></span></p>
         </div>
         <div class="actions">
-          <button class="btn" id="btn-edit" type="button" th:if="${v.status == 'PENDING' and can.vendorEdit}">Edit</button>
-          <button class="btn" data-review="START" type="button" th:if="${v.status == 'PENDING' and can.vendorReview}">Start review</button>
-          <button class="btn danger" data-review="REJECT" type="button" th:if="${(v.status == 'PENDING' or v.status == 'UNDER_REVIEW') and can.vendorReview}">Reject</button>
-          <button class="btn green" data-review="APPROVE" type="button" th:if="${(v.status == 'PENDING' or v.status == 'UNDER_REVIEW') and can.vendorReview}">Approve</button>
-          <a class="btn primary" th:if="${v.status == 'APPROVED' and can.contractEdit}" th:href="@{/contracts/new(vendorId=${v.id})}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
+          <button class="btn" id="btn-edit" type="button" th:if="${canManageVendors and v.status == 'PENDING'}">Edit</button>
+          <button class="btn" data-review="START" type="button" th:if="${canReviewVendors and v.status == 'PENDING'}">Start review</button>
+          <button class="btn danger" data-review="REJECT" type="button" th:if="${canReviewVendors and (v.status == 'PENDING' or v.status == 'UNDER_REVIEW')}">Reject</button>
+          <button class="btn green" data-review="APPROVE" type="button" th:if="${canReviewVendors and (v.status == 'PENDING' or v.status == 'UNDER_REVIEW')}">Approve</button>
+          <a class="btn primary" th:if="${canManageContracts and v.status == 'APPROVED'}" th:href="@{/contracts/new(vendorId=${v.id})}"><svg class="ic"><use href="#i-file"/></svg>New contract</a>
         </div>
       </div>
 
+      <div class="tabs">
+        <button class="on" type="button" data-tab="t-overview">Overview</button>
+        <button type="button" data-tab="t-docs">Documents <span class="muted" th:text="'(' + ${#lists.size(allDocs)} + ')'"></span></button>
+        <button type="button" data-tab="t-flow">Approval flow</button>
+      </div>
+
+      <div class="tabpane on" id="t-overview">
       <div class="two-col">
         <div>
           <div class="card">
@@ -43,21 +50,21 @@
           </div>
 
           <div class="card flush">
-            <div class="toolbar"><h2 style="margin:0;flex:1">Company contacts</h2><button class="btn sm" id="btn-contact" type="button" th:if="${can.vendorEdit}"><svg class="ic"><use href="#i-plus"/></svg>Add contact</button></div>
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company contacts</h2><button class="btn sm" id="btn-contact" type="button" th:if="${canManageVendors}"><svg class="ic"><use href="#i-plus"/></svg>Add contact</button></div>
             <div class="table-wrap"><table>
               <thead><tr><th>Name</th><th>Function</th><th>Phone</th><th>Email</th><th></th></tr></thead>
               <tbody>
                 <tr th:each="c : ${contacts}">
                   <td class="name"><span th:text="${c.fullName}">Name</span> <span class="badge b-ACTIVE" th:if="${c.isPrimary}">Primary</span></td>
                   <td th:text="${c.jobTitle}"></td><td th:text="${c.phone}"></td><td th:text="${c.email} ?: '—'"></td>
-                  <td><button class="btn sm danger" type="button" th:if="${!c.isPrimary and can.vendorEdit}" th:data-contact-del="${c.id}">Remove</button></td>
+                  <td><button class="btn sm danger" type="button" th:if="${canManageVendors and !c.isPrimary}" th:data-contact-del="${c.id}">Remove</button></td>
                 </tr>
               </tbody></table></div>
           </div>
 
           <div class="card flush">
-            <div class="toolbar"><h2 style="margin:0;flex:1">Company documents</h2><button class="btn sm" id="doc-open" type="button" th:if="${can.vendorEdit}"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
-            <div th:replace="~{fragments/documents :: panel(${docs}, ${can.vendorEdit})}"></div>
+            <div class="toolbar"><h2 style="margin:0;flex:1">Company documents</h2><button class="btn sm" id="doc-open" type="button" th:if="${canManageVendors}"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
+            <div th:replace="~{fragments/documents :: panel(${docs}, ${canManageVendors})}"></div>
           </div>
         </div>
 
@@ -78,6 +85,93 @@
               <li th:each="h : ${history}"><b th:text="${h.action}"></b> <span class="muted" th:text="${h.entityType}"></span>
                 <div class="muted" th:text="${h.actor} + ' · ' + ${#temporals.format(h.happenedAt, 'dd/MM/yyyy HH:mm')}"></div></li>
             </ul>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Todos os documentos do vendor, em todas as fases, e quem os submeteu -->
+      <div class="tabpane" id="t-docs">
+        <div class="card flush">
+          <div class="toolbar"><h2 style="margin:0;flex:1">All documents</h2>
+            <span class="muted">Company documents and contract documents, with who submitted each one and in which phase.</span></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Document</th><th>Type</th><th>Belongs to</th><th>Phase when submitted</th><th>Submitted by</th><th>Date</th><th>Expires</th><th>File</th></tr></thead>
+            <tbody>
+              <tr th:each="d : ${allDocs}" th:classappend="${!d.active} ? 'removed'">
+                <td class="name" th:text="${d.name}">Doc</td>
+                <td th:text="${d.typeName} ?: '—'">Type</td>
+                <td>
+                  <span th:if="${d.originType == 'VENDOR'}">Company</span>
+                  <a th:if="${d.originType == 'CONTRACT'}" th:href="@{/contracts/{id}(id=${d.originId})}" th:text="${d.origin}">CTR</a>
+                </td>
+                <td>
+                  <span th:text="${d.originType == 'VENDOR' ? 'Onboarding' : 'Contract'}">Onboarding</span>
+                  <th:block th:if="${d.stage != null}"><span th:replace="~{fragments/shell :: status(${d.stage})}"></span></th:block>
+                </td>
+                <td th:text="${d.uploadedBy}">User</td>
+                <td class="muted" th:text="${#temporals.format(d.uploadedAt, 'dd/MM/yyyy HH:mm')}"></td>
+                <td th:text="${#temporals.format(d.expiryDate, 'dd/MM/yyyy')}"></td>
+                <td>
+                  <a th:if="${d.active}" th:href="@{/documents/{id}/download(id=${d.id})}" th:text="${d.fileName}">file.pdf</a>
+                  <span th:unless="${d.active}"><span th:text="${d.fileName}"></span> <span class="badge b-CANCELLED">Removed</span></span>
+                </td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(allDocs)}"><td colspan="8" class="empty">No documents yet.</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Percurso de aprovacao completo do vendor: onboarding + fluxo de cada contrato -->
+      <div class="tabpane" id="t-flow">
+        <div class="card">
+          <h2>Approval journey</h2>
+          <ul class="timeline">
+            <li class="APPROVED">
+              <b>1. Vendor registration</b> <span class="badge b-APPROVED">Done</span>
+              <div class="muted" th:text="'Registered by ' + ${v.createdBy} + ' · ' + ${#temporals.format(v.createdAt, 'dd/MM/yyyy HH:mm')}"></div>
+            </li>
+            <li th:classappend="${v.status == 'APPROVED'} ? 'APPROVED' : (${v.status == 'REJECTED'} ? 'REJECTED' : 'PENDING')">
+              <b>2. Vendor review</b> <span th:replace="~{fragments/shell :: status(${v.status})}"></span>
+              <div class="muted" th:if="${v.reviewedAt != null}" th:text="${v.reviewedBy} + ' · ' + ${#temporals.format(v.reviewedAt, 'dd/MM/yyyy HH:mm')}"></div>
+              <div th:if="${v.reviewComment != null}" th:text="'“' + ${v.reviewComment} + '”'"></div>
+              <div class="muted" th:if="${v.status == 'PENDING' or v.status == 'UNDER_REVIEW'}">Waiting for a reviewer (Approver, Compliance, Risk Team or administrator).</div>
+            </li>
+            <li class="WAITING">
+              <b>3. Contract approval</b>
+              <span class="muted" th:if="${vendorFlow.flowName != null}" th:text="'Flow: ' + ${vendorFlow.flowName} + (${vendorFlow.isDefault} ? ' (default flow)' : '') + ' — applied to each contract of ' + ${v.serviceArea}"></span>
+              <div class="muted" th:if="${vendorFlow.flowName == null}">No approval flow is configured yet (Settings &gt; Approval Flows).</div>
+              <ol class="plan" th:if="${vendorFlow.flowName != null}">
+                <li th:each="s : ${vendorFlow.steps}"><b th:text="${s.stepName}"></b> — <span th:text="${s.approverName}"></span></li>
+              </ol>
+            </li>
+          </ul>
+        </div>
+
+        <div class="card" th:if="${#lists.isEmpty(contractRuns)}"><p class="muted" style="margin:0">No contracts yet. Each new contract will follow the flow above.</p></div>
+        <div class="card" th:each="c : ${contractRuns}">
+          <div class="chart-head">
+            <h2><a th:href="@{/contracts/{id}(id=${c.id})}" th:text="${c.number}">CTR</a> — <span th:text="${c.title}"></span>
+              <span th:replace="~{fragments/shell :: status(${c.status})}"></span></h2>
+            <span class="muted" th:text="${c.serviceArea}"></span>
+          </div>
+          <div th:each="r : ${c.requests}" style="margin-bottom:14px">
+            <div><b>Request #<span th:text="${r.requestId}"></span></b> <span th:replace="~{fragments/shell :: status(${r.status})}"></span>
+              <span class="muted" th:text="'Submitted by ' + ${r.submittedBy} + ' · ' + ${#temporals.format(r.submittedAt, 'dd/MM/yyyy HH:mm')}"></span></div>
+            <ul class="timeline">
+              <li th:each="t : ${r.tasks}" th:classappend="${t.decision}">
+                <b th:text="${t.stepNo} + '. ' + ${t.stepName}"></b> — <span th:text="${t.approverName}"></span>
+                <span th:replace="~{fragments/shell :: status(${t.decision})}"></span>
+                <div class="muted" th:if="${t.decidedAt != null}" th:text="${#temporals.format(t.decidedAt, 'dd/MM/yyyy HH:mm')}"></div>
+                <div th:if="${t.comments != null}" th:text="'“' + ${t.comments} + '”'"></div>
+                <div class="reassign" th:each="x : ${t.reassignments}" th:text="'Reassigned from ' + ${x.fromName} + ' to ' + ${x.toName} + ' by ' + ${x.byName} + ' (' + ${#temporals.format(x.happenedAt, 'dd/MM/yyyy HH:mm')} + '): ' + ${x.reason}"></div>
+              </li>
+            </ul>
+          </div>
+          <div th:if="${#lists.isEmpty(c.requests) and c.planned != null}">
+            <p class="muted">Not submitted yet. When submitted it will follow <span th:text="${c.planned.flowName != null} ? ${c.planned.flowName} + (${c.planned.isDefault} ? ' (default flow)' : '') : 'the configured flow'"></span>:</p>
+            <ol class="plan"><li th:each="s : ${c.planned.steps}"><b th:text="${s.stepName}"></b> — <span th:text="${s.approverName}"></span></li></ol>
           </div>
         </div>
       </div>

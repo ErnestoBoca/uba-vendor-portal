@@ -46,7 +46,7 @@
   }
   ['f-contact', 'f-mobile', 'f-mobile-cc'].forEach(id => document.getElementById(id).addEventListener('input', syncPrimary));
 
-  const btnNew = document.getElementById('btn-new');
+  const btnNew = document.getElementById('btn-new');   // so existe para Corporate Services
   if (btnNew) {
     btnNew.addEventListener('click', open);
     if (new URLSearchParams(location.search).get('new')) open();

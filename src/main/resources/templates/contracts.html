@@ -10,7 +10,7 @@
     <main class="content">
       <div class="page-head">
         <div><h1>Contracts</h1><p>Contracts with approved vendors. A contract becomes active only after its full approval flow is completed.</p></div>
-        <div class="actions" th:if="${can.contractEdit}"><a class="btn primary" th:href="@{/contracts/new}"><svg class="ic"><use href="#i-plus"/></svg>New contract</a></div>
+        <div class="actions"><a class="btn primary" th:if="${canManageContracts}" th:href="@{/contracts/new}"><svg class="ic"><use href="#i-plus"/></svg>New contract</a></div>
       </div>
       <div class="card flush">
         <form class="toolbar" method="get" th:action="@{/contracts}">

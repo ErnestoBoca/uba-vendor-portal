@@ -39,10 +39,14 @@ public class DocumentController {
         this.currentUser = currentUser;
     }
 
-    /** Documentos de vendor: quem edita vendors; de contrato: quem edita contratos. */
-    private void requireEdit(String entityType) {
-        if ("VENDOR".equals(entityType)) currentUser.requireVendorEdit();
-        else currentUser.requireContractEdit();
+    /** Documentos do vendor: Corporate Services. Documentos do contrato: Legal. O administrador pode ambos. */
+    private void requireCanManage(String entityType) {
+        if (entityType.equals("VENDOR") && !currentUser.canManageVendors()) {
+            throw new ApiException("Apenas Corporate Services pode gerir os documentos do vendor.", 403);
+        }
+        if (entityType.equals("CONTRACT") && !currentUser.canManageContracts()) {
+            throw new ApiException("Apenas o Legal pode gerir os documentos do contrato.", 403);
+        }
     }
 
     @PostMapping(value = "/api/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -57,7 +61,7 @@ public class DocumentController {
         if (!ALLOWED.contains(entityType)) {
             throw new ApiException("Tipo de entidade nao suportado.");
         }
-        requireEdit(entityType);
+        requireCanManage(entityType);
         Long vendorId = entityType.equals("VENDOR") ? Long.valueOf(entityId) : Util.num(contracts.get(entityId).get("vendorId"));
         long id = documents.save(entityType, entityId, documentTypeId, name, file, parse(issueDate), parse(expiryDate), vendorId);
         return Map.of("id", id);
@@ -67,8 +71,10 @@ public class DocumentController {
     @ResponseBody
     public Map<String, Object> remove(@PathVariable long id) {
         Map<String, Object> d = documents.find(id);
-        if (d == null) throw new ApiException("Documento nao encontrado.", 404);
-        requireEdit((String) d.get("entityType"));
+        if (d == null) {
+            throw new ApiException("Documento nao encontrado.", 404);
+        }
+        requireCanManage((String) d.get("entityType"));
         documents.deactivate(id);
         return Map.of("ok", true);
     }

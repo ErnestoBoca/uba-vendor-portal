@@ -1,33 +1,20 @@
 package com.ubagroup.vendorportal.common;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import com.ubagroup.vendorportal.entity.AppRole;
 import com.ubagroup.vendorportal.entity.AppUser;
 import com.ubagroup.vendorportal.repository.AppUserRepository;
 
-/**
- * Acesso ao utilizador autenticado e as suas permissoes.
- * As permissoes sao lidas da BD em cada pedido: uma mudanca de perfil em Settings > Users tem efeito imediato.
- *
- * Matriz (ver tambem docs/TEST_PLAN.md):
- *  - SYS_ADMIN ............ tudo (Settings incluido)
- *  - CS_OFFICER ........... regista/edita vendors, contactos e documentos; cria/edita/submete contratos
- *  - CS_APPROVER .......... inicia revisao, aprova/rejeita vendors
- *  - LEGAL_OFFICER ........ cria/edita/submete contratos (contract register)
- *  - *_APPROVER ........... decide os passos de aprovacao atribuidos ao seu perfil (ou a si)
- *  - VIEWER (UBA Staff) ... so leitura
- */
+/** Acesso ao utilizador autenticado (sessao Spring Security) e aos seus dados em app_user. */
 @Component
 public class CurrentUser {
-
-    public static final String DEPT_CS = "CS";
-    public static final String DEPT_LEGAL = "LEGAL";
 
     private final AppUserRepository users;
 
@@ -52,74 +39,55 @@ public class CurrentUser {
     /** Dados para o layout (topo): me.id, me.fullName, ... */
     public Map<String, Object> info() {
         AppUser u = user();
-        String roleNames = String.join(", ", u.getRoles().stream().filter(AppRole::isActive).map(AppRole::getName).sorted().toList());
-        return Util.p("id", u.getId(), "username", u.getUsername(), "fullName", u.getFullName(), "email", u.getEmail(), "roles", roleNames);
+        return Util.p("id", u.getId(), "username", u.getUsername(), "fullName", u.getFullName(), "email", u.getEmail());
     }
 
-    // ---------- perfis ----------
-
-    private static boolean isAdmin(AppUser u) {
-        return u.getRoles().stream().anyMatch(r -> r.isActive() && AppRole.ADMIN.equals(r.getLevel()));
+    /** Lança 403 se o utilizador não puder registar/editar contratos (Legal ou administrador). */
+    public void requireContractEdit() {
+        if (!canManageContracts()) {
+            throw new ApiException("Apenas o Legal pode registar ou editar contratos.", 403);
+        }
     }
 
-    /** true se o utilizador tem um perfil activo do departamento (activo) com o nivel indicado. */
-    private static boolean has(AppUser u, String dept, String level) {
-        return u.getRoles().stream().anyMatch(r -> r.isActive() && level.equals(r.getLevel())
-            && r.getDepartment() != null && r.getDepartment().isActive() && dept.equals(r.getDepartment().getCode()));
+    /** Lança 403 se o utilizador não puder registar/editar vendors (Corporate Services ou administrador). */
+    public void requireVendorEdit() {
+        if (!canManageVendors()) {
+            throw new ApiException("Apenas Corporate Services pode registar ou editar vendors.", 403);
+        }
+    }
+
+    /** Lança 403 se o utilizador não puder rever (iniciar revisão, aprovar, rejeitar) vendors. */
+    public void requireVendorReview() {
+        if (!canReviewVendors()) {
+            throw new ApiException("O seu perfil não pode rever vendors.", 403);
+        }
     }
 
     public boolean isAdmin() {
-        return isAdmin(user());
+        Authentication a = SecurityContextHolder.getContext().getAuthentication();
+        return a != null && a.getAuthorities().stream().anyMatch(g -> g.getAuthority().equals("ROLE_SYS_ADMIN"));
     }
 
-    /** Ids dos perfis activos do utilizador (para a caixa de aprovacoes por perfil). */
-    public List<Integer> roleIds() {
-        return user().getRoles().stream()
-            .filter(r -> r.isActive() && (r.getDepartment() == null || r.getDepartment().isActive()))
-            .map(AppRole::getId).toList();
+    /** True se o utilizador tem pelo menos um dos perfis (codigos de app_role, sem o prefixo ROLE_). */
+    public boolean hasAnyRole(String... codes) {
+        Authentication a = SecurityContextHolder.getContext().getAuthentication();
+        if (a == null) return false;
+        Set<String> wanted = Arrays.stream(codes).map(c -> "ROLE_" + c).collect(Collectors.toSet());
+        return a.getAuthorities().stream().anyMatch(g -> wanted.contains(g.getAuthority()));
     }
 
-    public boolean canEditVendors() {
-        AppUser u = user();
-        return isAdmin(u) || has(u, DEPT_CS, AppRole.OFFICER);
+    /** Corporate Services (e administrador): regista vendors, contactos e documentos do vendor. */
+    public boolean canManageVendors() {
+        return hasAnyRole("SYS_ADMIN", "CS_OFFICER");
     }
 
+    /** Legal (e administrador): regista contratos e os seus documentos. */
+    public boolean canManageContracts() {
+        return hasAnyRole("SYS_ADMIN", "LEGAL");
+    }
+
+    /** Quem pode rever (iniciar revisao, aprovar, rejeitar) um vendor. Quem regista nao revê. */
     public boolean canReviewVendors() {
-        AppUser u = user();
-        return isAdmin(u) || has(u, DEPT_CS, AppRole.APPROVER);
-    }
-
-    public boolean canEditContracts() {
-        AppUser u = user();
-        return isAdmin(u) || has(u, DEPT_CS, AppRole.OFFICER) || has(u, DEPT_LEGAL, AppRole.OFFICER);
-    }
-
-    /** Mapa para os templates: can.vendorEdit, can.vendorReview, can.contractEdit, can.settings. */
-    public Map<String, Object> permissions() {
-        AppUser u = user();
-        boolean admin = isAdmin(u);
-        return Util.p(
-            "settings", admin,
-            "vendorEdit", admin || has(u, DEPT_CS, AppRole.OFFICER),
-            "vendorReview", admin || has(u, DEPT_CS, AppRole.APPROVER),
-            "contractEdit", admin || has(u, DEPT_CS, AppRole.OFFICER) || has(u, DEPT_LEGAL, AppRole.OFFICER));
-    }
-
-    // ---------- verificacoes (lancam 403) ----------
-
-    public void requireAdmin() {
-        if (!isAdmin()) throw new ApiException("Apenas o administrador do sistema pode alterar as configuracoes.", 403);
-    }
-
-    public void requireVendorEdit() {
-        if (!canEditVendors()) throw new ApiException("Sem permissao: apenas Corporate Services Officers registam e alteram vendors.", 403);
-    }
-
-    public void requireVendorReview() {
-        if (!canReviewVendors()) throw new ApiException("Sem permissao: apenas o Corporate Services Approver aprova ou rejeita vendors.", 403);
-    }
-
-    public void requireContractEdit() {
-        if (!canEditContracts()) throw new ApiException("Sem permissao: apenas Corporate Services ou Legal Officers criam e submetem contratos.", 403);
+        return hasAnyRole("SYS_ADMIN", "APPROVER", "COMPLIANCE", "RISK_TEAM");
     }
 }

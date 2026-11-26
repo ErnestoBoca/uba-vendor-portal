@@ -1,6 +1,17 @@
 (function () {
   const page = document.getElementById('page');
   const id = page.dataset.id;
+  // separadores (Overview / Documents / Approval flow)
+  document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('on'));
+    document.querySelectorAll('.tabpane').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    document.getElementById(b.dataset.tab).classList.add('on');
+    history.replaceState(null, '', '#' + b.dataset.tab);
+  }));
+  const initialTab = document.querySelector('.tabs [data-tab="' + location.hash.replace('#', '') + '"]');
+  if (initialTab) initialTab.click();
+
   document.getElementById('overlay').addEventListener('click', () => document.querySelectorAll('.modal.open').forEach(m => UI.close(m.id)));
 
   // rever / aprovar / rejeitar
@@ -20,7 +31,7 @@
   }));
 
   // contactos
-  const btnContact = document.getElementById('btn-contact');
+  const btnContact = document.getElementById('btn-contact');   // so existe para Corporate Services
   if (btnContact) btnContact.addEventListener('click', () => { UI.clearError('contact-err'); UI.open('contact-modal'); });
   document.getElementById('ct-save').addEventListener('click', ev => UI.run(ev.currentTarget, 'contact-err', async () => {
     await Api.post('/api/vendors/' + id + '/contacts', { fullName: UI.val('ct-name'), phone: UI.val('ct-phone'), jobTitle: UI.val('ct-job'), email: UI.orNull(UI.val('ct-email')) });

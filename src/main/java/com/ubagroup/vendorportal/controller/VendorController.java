@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ubagroup.vendorportal.common.ApiException;
+import com.ubagroup.vendorportal.service.ApprovalService;
 import com.ubagroup.vendorportal.service.ContractService;
 import com.ubagroup.vendorportal.service.DocumentService;
 import com.ubagroup.vendorportal.service.VendorService;
@@ -32,12 +33,15 @@ public class VendorController {
     private final VendorService vendors;
     private final ContractService contracts;
     private final DocumentService documents;
+    private final ApprovalService approvals;
     private final ObjectMapper om;
 
-    public VendorController(VendorService vendors, ContractService contracts, DocumentService documents, ObjectMapper om) {
+    public VendorController(VendorService vendors, ContractService contracts, DocumentService documents,
+                            ApprovalService approvals, ObjectMapper om) {
         this.vendors = vendors;
         this.contracts = contracts;
         this.documents = documents;
+        this.approvals = approvals;
         this.om = om;
     }
 
@@ -60,15 +64,18 @@ public class VendorController {
 
     @GetMapping("/vendors/{id}")
     public String detail(@PathVariable long id, Model model) {
-        model.addAttribute("active", "vendors");
         Map<String, Object> v = vendors.get(id);
+        model.addAttribute("active", "vendors");
         model.addAttribute("v", v);
         model.addAttribute("contacts", vendors.contacts(id));
         model.addAttribute("docs", documents.list("VENDOR", id));
         model.addAttribute("docTypes", documents.types("VENDOR"));
+        model.addAttribute("allDocs", documents.forVendor(id));
+        model.addAttribute("vendorFlow", approvals.plannedFlow("CONTRACT", ((Number) v.get("serviceCategoryId")).longValue()));
+        model.addAttribute("contractRuns", approvals.contractRuns(id));
         model.addAttribute("history", vendors.history(id));
         model.addAttribute("contracts", contracts.forVendor(id));
-        model.addAttribute("categories", vendors.categoriesIncluding((Integer) v.get("serviceCategoryId")));
+        model.addAttribute("categories", vendors.categories());
         return "vendor-detail";
     }
 

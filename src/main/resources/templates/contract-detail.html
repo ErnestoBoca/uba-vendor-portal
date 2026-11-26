@@ -15,7 +15,7 @@
           <p><span class="mono" th:text="${c.number}">CTR</span> &nbsp; <span th:replace="~{fragments/shell :: status(${c.status})}"></span>
              &nbsp; <a th:href="@{/vendors/{id}(id=${c.vendorId})}" th:text="${c.vendorName}">Vendor</a></p>
         </div>
-        <div class="actions" th:if="${(c.status == 'DRAFT' or c.status == 'REJECTED') and can.contractEdit}">
+        <div class="actions" th:if="${canManageContracts and (c.status == 'DRAFT' or c.status == 'REJECTED')}">
           <a class="btn" th:href="@{/contracts/{id}/edit(id=${c.id})}">Edit</a>
           <button class="btn primary" id="btn-submit" type="button">Submit for approval</button>
         </div>
@@ -51,8 +51,8 @@
       </dl></div></div>
 
       <div class="tabpane" id="t-docs"><div class="card flush">
-        <div class="toolbar"><h2 style="margin:0;flex:1">Contract documents</h2><button class="btn sm" id="doc-open" type="button" th:if="${can.contractEdit}"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
-        <div th:replace="~{fragments/documents :: panel(${docs}, ${(c.status == 'DRAFT' or c.status == 'REJECTED') and can.contractEdit})}"></div>
+        <div class="toolbar"><h2 style="margin:0;flex:1">Contract documents</h2><button class="btn sm" id="doc-open" type="button" th:if="${canManageContracts}"><svg class="ic"><use href="#i-plus"/></svg>Upload document</button></div>
+        <div th:replace="~{fragments/documents :: panel(${docs}, ${canManageContracts and (c.status == 'DRAFT' or c.status == 'REJECTED')})}"></div>
       </div></div>
 
       <div class="tabpane" id="t-approval">
@@ -63,12 +63,11 @@
           <ul class="timeline">
             <li th:each="t : ${r.tasks}" th:classappend="${t.decision}">
               <b th:text="${t.stepNo} + '. ' + ${t.stepName}"></b> — <span th:text="${t.approverName}"></span>
-              <span class="muted" th:if="${t.decidedBy != null and t.decidedBy != t.approverName}" th:text="'(decided by ' + ${t.decidedBy} + ')'"></span>
               <span th:replace="~{fragments/shell :: status(${t.decision})}"></span>
               <div class="muted" th:if="${t.decidedAt != null}" th:text="${#temporals.format(t.decidedAt, 'dd/MM/yyyy HH:mm')}"></div>
               <div th:if="${t.comments != null}" th:text="'“' + ${t.comments} + '”'"></div>
               <div class="reassign" th:each="x : ${t.reassignments}" th:text="'Reassigned from ' + ${x.fromName} + ' to ' + ${x.toName} + ' by ' + ${x.byName} + ' (' + ${#temporals.format(x.happenedAt, 'dd/MM/yyyy HH:mm')} + '): ' + ${x.reason}"></div>
-              <div class="actions" style="margin-top:8px" th:if="${t.canAct}">
+              <div class="actions" style="margin-top:8px" th:if="${t.decision == 'PENDING' and t.approverId == me.id}">
                 <button class="btn sm green" type="button" data-decide="APPROVE" th:data-task="${t.taskId}">Approve</button>
                 <button class="btn sm" type="button" data-decide="RETURN" th:data-task="${t.taskId}">Return</button>
                 <button class="btn sm danger" type="button" data-decide="REJECT" th:data-task="${t.taskId}">Reject</button>

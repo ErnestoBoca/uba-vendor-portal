@@ -26,6 +26,8 @@ public class Document {
     @Column(name = "expiry_date") private LocalDate expiryDate;
     @ManyToOne(fetch = FetchType.LAZY, optional = false) @JoinColumn(name = "uploaded_by") private AppUser uploadedBy;
     @Column(name = "uploaded_at") private OffsetDateTime uploadedAt;
+    /** Estado do vendor/contrato no momento do upload (fase em que o documento foi submetido). */
+    @Column(name = "stage") private String stage;
     @Column(name = "is_active") private boolean active = true;
 
     @PrePersist void onCreate() { uploadedAt = OffsetDateTime.now(); }

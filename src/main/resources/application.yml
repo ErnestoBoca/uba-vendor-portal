@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: vendor-portal
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=vms;encrypt=true;trustServerCertificate=true
+    username: vms_app
+    password: Vms_App_2026!
+    #driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none          # o esquema e' gerido pelo Flyway, nunca pelo Hibernate
+    properties:
+      hibernate:
+        default_schema: dbo
+        jdbc:
+          use_get_generated_keys: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 60MB
+  thymeleaf:
+    cache: false
+
+app:
+  storage:
+    dir: ${VMS_STORAGE_DIR:./storage}
